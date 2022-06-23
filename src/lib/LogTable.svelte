@@ -1,29 +1,25 @@
 <script lang="ts">
 	import LogTableEntry from './LogTableEntry.svelte';
 
-	export let userToken = '';
-	const baseUrl = 'https://dps.report/getUpload';
+	export let userToken: string = '';
+
+	const baseUrl = 'https://dps.report/getUploads';
 	let url = baseUrl + '?userToken=' + userToken;
+	let logsPromise = fetchLogs();
 
 	async function fetchLogs() {
 		const response = await fetch(url);
 		return await response.json();
 	}
-
-	// XXX use fetchLogs() instead
-	let logs = [
-		{
-			url: 'https://dps.report/getJson?permalink=https://wvw.report/duCJ-20220622-214727_wvw'
-		}
-	];
 </script>
 
-<input bind:value={userToken} placeholder="userToken" />
+<input bind:value={userToken} placeholder="userToken" size="38" />
 <button on:click={fetchLogs}> Fetch </button>
-<table>
+<table style="width:100%">
 	<tr>
-		<th> Date </th>
-		<th> Url </th>
+		<th> URL </th>
+		<th> Timestamp </th>
+		<th> Duration </th>
 		<th> Loaded </th>
 	</tr>
 	<!-- Use with fetchLogs()
@@ -34,7 +30,25 @@
 	{:catch someError}
 		<p>{someError.message}</p>
 	{/await}-->
-	{#each logs as log}
-		<LogTableEntry path={log.url} />
-	{/each}
+	{#await logsPromise}
+		<tr>
+			<td> 0 </td>
+			<td> - </td>
+			<td> - </td>
+		</tr>
+	{:then logs}
+		<!--<p>{JSON.stringify(logs.uploads, null, 2)}</p>-->
+		<!--{#each { length: 10 } as _, i}
+			<LogTableEntry logID={logs.uploads[i].id} />
+		{/each}-->
+		{#each logs.uploads as log}
+			<LogTableEntry id={log.id} permalink={log.permalink} />
+		{/each}
+	{:catch someError}
+		<tr>
+			<td>ERROR</td>
+			<td><p>{someError.message}</p></td>
+			<td />
+		</tr>
+	{/await}
 </table>

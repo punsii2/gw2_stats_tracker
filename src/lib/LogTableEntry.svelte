@@ -1,37 +1,42 @@
 <script lang="ts">
-	export let path: string;
+	import moment from 'moment';
+	export let id: string;
+	export let permalink: string;
+	const baseUrl = 'https://dps.report/getJson';
+	let fetchUrl = baseUrl + '?id=' + id;
 	let dataPromise = {};
 	let isLoaded = false;
 
+	dataPromise = getData();
 	async function getData() {
-		const response = await fetch(path);
+		const response = await fetch(fetchUrl);
 		return await response.json();
 	}
 
-	function matchDate(url: string) {
-		const dateRegex = /[0-9]{8}$/;
-		return url.match(dateRegex);
-	}
+	const dateRegex = /[0-9]{8}-[0-9]{6}$/;
 </script>
 
 <!--
-    Date
-    URL
+    ID
+    Duration
     Loaded
 -->
+
 {#await dataPromise}
 	<tr>
-		<td />
-		<td />
-		<td />
+		<td><a href={permalink}>{permalink}</a></td>
+		<td> {moment(id.match(dateRegex), 'YYYYMMDD-hhmmss').format('DD.MM.YY hh:mm:ss')} </td>
+		<td> - </td>
+		<td> ❌ </td>
 	</tr>
-{:then data}
-	<p>{JSON.stringify(data, null, 2)}</p>
+{:then logData}
 	<tr>
-		<td>{matchDate(path)}</td>
-		<td />
-		<td />
+		<td><a href={permalink}>{permalink}</a></td>
+		<td> {moment(id.match(dateRegex), 'YYYYMMDD-hhmmss').format('DD.MM.YY hh:mm:ss')} </td>
+		<td> {logData.duration} </td>
+		<td> ✅ </td>
 	</tr>
+	<!--<p>{JSON.stringify(logData, null, 2)}</p>-->
 {:catch someError}
 	<tr>
 		<td>ERROR</td>
