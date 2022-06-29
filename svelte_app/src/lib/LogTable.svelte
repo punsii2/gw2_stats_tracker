@@ -1,100 +1,46 @@
-<script>
-	import { onDestroy } from 'svelte';
-	import { initialValue, makeLogDataStore } from './logData';
+<script lang="ts">
 	import LogTableEntry from './LogTableEntry.svelte';
-
-	let someProp = 'something';
-	let store = makeLogDataStore(someProp);
-	let unsubscribe;
-	let logs = initialValue();
-
-	onDestroy(() => {
-		if (unsubscribe) {
-			unsubscribe();
-			unsubscribe = null;
-		}
+	import { writable } from 'svelte/store';
+	export const logStore = writable({
+		list: undefined,
+		data: {},
+		loading: false
 	});
 
-	function updateLogs(data) {
-		logs = data;
-	}
-
-	function handleClick() {
-		if (!unsubscribe) {
-			unsubscribe = store.subscribe(updateLogs);
-		}
-	}
-
 	export let userToken = '';
-	let logsPromise = fetchLogs(userToken);
-	//console.log(typeof logsPromise);
 
-	async function fetchLogs(userToken) {
+	async function loadLogList(userToken: string) {
 		const baseUrl = 'https://dps.report/getUploads';
 		let url = baseUrl + '?userToken=' + userToken;
-		const response = await fetch(url);
-		return await response.json();
-	}
 
-	//<!--<table style="width:100%">
-	//	<tr>
-	//		<th> URL </th>
-	//		<th> Timestamp </th>
-	//		<th> Duration </th>
-	//		<th> Loaded </th>
-	//	</tr>
-	//	<!-- Use with fetchLogs()
-	//	{#await dataPromise}
-	//		<p>Loading...</p>
-	//	{:then data}
-	//		<p>{JSON.stringify(data, null, 2)}</p>
-	//	{:catch someError}
-	//		<p>{someError.message}</p>
-	//	{/await}
-	//	{#await logsPromise}
-	//		<tr>
-	//			<td> - </td>
-	//			<td> - </td>
-	//			<td> - </td>
-	//			<td> - </td>
-	//		</tr>
-	//	{:then logs}
-	//		<!--<p>{JSON.stringify(logs.uploads, null, 2)}</p>-->
-	//		<!--{#each { length: 10 } as _, i}
-	//			<LogTableEntry logID={logs.uploads[i].id} />
-	//		{/each}
-	//		{#if !Object.hasOwn(logs, 'uploads')}
-	//			<tr>
-	//				<td> - </td>
-	//				<td> - </td>
-	//				<td> - </td>
-	//				<td> - </td>
-	//			</tr>
-	//		{:else}
-	//			{#each logs.uploads as log}
-	//				<LogTableEntry id={log.id} permalink={log.permalink} />
-	//			{/each}
-	//		{/if}
-	//	{:catch someError}
-	//		<tr>
-	//			<td />
-	//			<td>ERROR</td>
-	//			<td><p>{someError.message}</p></td>
-	//			<td />
-	//		</tr>
-	//	{/await}
-	//</table>-->
+		$logStore.loading = true;
+		const response = await fetch(url);
+		const list = await response.json();
+		$logStore.list = list;
+		$logStore.loading = false;
+	}
 </script>
 
 <div class="fetch-input">
 	<input bind:value={userToken} placeholder="userToken" size="38" />
-	<button on:click={handleClick} disabled={!!unsubscribe}> Fetch </button>
+	<button on:click={loadLogList(userToken)}> Fetch </button>
 </div>
-
-{#each [...logs.logs.entries()] as [id, logMetaData]}
-	<h3>{id}</h3>
-	<p>{logMetaData.logData}</p>
-{/each}
+<table style="width:100%">
+	<tr>
+		<th> URL </th>
+		<th> Timestamp </th>
+		<th> Duration </th>
+		<th> Loaded </th>
+	</tr>
+	{#if $logStore.loading}
+		<tr> Loading Data... </tr>
+	{:else if $logStore.list !== undefined}
+		{console.log($logStore)}
+		{#each $logStore.list.uploads as log}
+			<LogTableEntry id={log.id} permalink={log.permalink} />
+		{/each}
+	{/if}
+</table>
 
 <style>
 	th {

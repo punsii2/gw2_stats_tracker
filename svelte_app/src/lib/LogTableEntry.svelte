@@ -1,6 +1,6 @@
 <script lang="ts">
 	import moment from 'moment';
-	//import { logData } from './logData.js';
+	import { logStore } from './LogTable.svelte';
 
 	export let id: string;
 	export let permalink: string;
@@ -9,19 +9,12 @@
 	let dataPromise = {};
 	let isLoaded = false;
 
-	dataPromise = getData();
+	getData();
 	async function getData() {
 		const response = await fetch(fetchUrl);
-		return await response.json();
+		const data = await response.json();
+		console.log($logStore.data);
 	}
-
-	//const appenToLogData = (log: object) => {
-	//	if (id in $logData) {
-	//		$logData[id] = log;
-	//	}
-	//	console.log(log);
-	//	console.log($logData);
-	//};
 
 	const dateRegex = /[0-9]{8}-[0-9]{6}$/;
 </script>
