@@ -1,22 +1,23 @@
-import json
+import concurrent.futures
 import requests
+import sys
 
-relevantKeysList = [
+RELEVANT_KEYS_LIST = [
     "id",
     "permalink",
     "uploadTime",
     "encounterTime",
-    #"players", XXX Name conflict
+    # "players", XXX Name conflict
 ]
 
-relevantKeysData = [
+RELEVANT_KEYS_DATA = [
     "timeStart",
     "timeEnd",
     "duration",
     "players",
 ]
 
-relevantKeysDataPlayers = [
+RELEVANT_KEYS_DATA_PLAYERS = [
     "account",
     "group",
     "hasCommanderTag",
@@ -32,80 +33,82 @@ relevantKeysDataPlayers = [
     "outgoingHealing"
 ]
 
-response = requests.get(
-    "https://dps.report/getUploads?userToken=")
-response.raise_for_status()
-logList = response.json()
 
-# logList.keys()=dict_keys([
-#   'pages'
-#   'totalUploads'
-#   'userToken'
-#   'uploads'
-# ])
-# logList['uploads'][0].keys()=dict_keys([
-#  'id'
-#  'permalink'
-#  'uploadTime'
-#  'encounterTime'
-#  'generator'
-#  'generatorId'
-#  'generatorVersion'
-#  'language'
-#  'languageId'
-#  'evtc'
-#  'players'
-#  'encounter'
-#  'report'
-#  'tempApiId'
-# ])
-uploads = logList['uploads']
+def fetch_log(id: str):
+    return requests.get(f"https://dps.report/getJson?id={id}")
 
-logsData = {}
-i = 0
-for log in uploads:
-    i += 1
-    if i > 3:
-        break
-    response = requests.get(
-        f"https://dps.report/getJson?id={log['id']}")
-    response.raise_for_status()
-    data = response.json()
+
+def filter_log_data(data: dict):
     for key in list(data.keys()):
-        if key not in relevantKeysData:
+        if key not in RELEVANT_KEYS_DATA:
             del data[key]
 
     for player in data['players']:
         for key in list(player.keys()):
-            if key not in relevantKeysDataPlayers:
+            if key not in RELEVANT_KEYS_DATA_PLAYERS:
                 del player[key]
 
-    for key in relevantKeysList:
-        data[key] = log[key]
+    return data
 
-    logsData[log['id']] = data
 
-#log1 = logsData[uploads[0]['id']]
-#keys1 = log1.keys()
-# for key1 in keys1:
-#    keyType1 = type(log1[key1])
-#    print(f"{key1=}: {keyType1=}")
-#    if isinstance(log1[key1], dict):
-#        keys2 = log1[key1].keys()
-#        for key2 in keys2:
-#            keyType2 = type(log1[key1][key2])
-#            print(f"    {key2=}: {keyType2=}")
-#
-#
-#player1 = log1['players'][0]
-#keys1 = player1.keys()
-# for key1 in keys1:
-#    keyType1 = type(player1[key1])
-#    print(f"{key1=}: {keyType1=}")
-#    if isinstance(player1[key1], dict):
-#        keys2 = player1[key1].keys()
-#        for key2 in keys2:
-#            keyType2 = type(player1[key1][key2])
-#            print(f"    {key2=}: {keyType2=}")
+def fetch_data(userToken: str):
+    response = requests.get(
+        f"https://dps.report/getUploads?userToken={userToken}")
+    response.raise_for_status()
+    logList = response.json()
 
-print(json.dumps(logsData[uploads[1]['id']], indent=2))
+    # logList.keys()=dict_keys([
+    #   'pages'
+    #   'totalUploads'
+    #   'userToken'
+    #   'uploads'
+    # ])
+    # logList['uploads'][0].keys()=dict_keys([
+    #  'id'
+    #  'permalink'
+    #  'uploadTime'
+    #  'encounterTime'
+    #  'generator'
+    #  'generatorId'
+    #  'generatorVersion'
+    #  'language'
+    #  'languageId'
+    #  'evtc'
+    #  'players'
+    #  'encounter'
+    #  'report'
+    #  'tempApiId'
+    # ])
+    uploads = logList['uploads']
+
+    # Fetch all data
+    with concurrent.futures.ThreadPoolExecutor() as executor:  # optimally defined number of threads
+        logPromises = [
+            {
+                "id": log['id'],
+                "logPromise": executor.submit(fetch_log, log['id'])
+            } for log in uploads
+        ]
+        concurrent.futures.wait([entry['logPromise'] for entry in logPromises])
+
+    logsData = {}
+    for log in uploads:
+        logsData[log['id']] = {
+            'metaData': {},
+            'data': {}
+        }
+        for key in RELEVANT_KEYS_LIST:
+            logsData[log['id']]['metaData'][key] = log[key]
+
+    # Merge all the promises
+    for promise in logPromises:
+        response = promise['logPromise'].result()
+        response.raise_for_status()
+        data = response.json()
+        logsData[promise['id']]['data'] = filter_log_data(data)
+
+    return logsData
+
+
+if __name__ == "__main__":
+    print(fetch_data(sys.argv[1]))
