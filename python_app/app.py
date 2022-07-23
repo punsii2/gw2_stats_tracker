@@ -24,7 +24,7 @@ df = df_original
 
 # create inputs
 stats = list(df)
-removed_stats = ['id', 'permalink', 'uploadTime', 'encounterTime', 'timeStart', 'name',
+removed_stats = ['id', 'permalink', 'uploadTime', 'encounterTime', 'timeStart', 'name', 'group',
                  'timeEnd', 'duration', 'account', 'hasCommanderTag', 'profession', 'healing']
 stat_selector = st.sidebar.selectbox(
     "Select Stats", [stat for stat in stats if stat not in removed_stats])
@@ -32,14 +32,14 @@ group_by = st.sidebar.selectbox("Group by:", ['name', 'account', 'profession'])
 
 account_names = st.sidebar.multiselect(
     "Filter Account Names:", df.account.unique())
-charackter_names = st.sidebar.multiselect(
-    "Filter Charackter Names:", df.name.unique())
+character_names = st.sidebar.multiselect(
+    "Filter Character Names:", df.name.unique())
 professions = st.sidebar.multiselect(
     "Filter Professions:", df.profession.unique())
 
 # apply filters
-if charackter_names:
-    df = df[df['name'].isin(charackter_names)]
+if character_names:
+    df = df[df['name'].isin(character_names)]
 if account_names:
     df = df[df['account'].isin(account_names)]
 if professions:
