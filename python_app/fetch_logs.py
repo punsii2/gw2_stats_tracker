@@ -1,23 +1,25 @@
 import concurrent.futures
-import requests
 import sys
 
-RELEVANT_KEYS_LIST = [
+import requests
+import streamlit as st
+
+_RELEVANT_KEYS_LIST = [
     "id",
     "permalink",
     "uploadTime",
     "encounterTime",
-    # "players", XXX Name conflict
+    # "players", The player list is also part or the dataset
 ]
 
-RELEVANT_KEYS_DATA = [
+_RELEVANT_KEYS_DATA = [
     "timeStart",
     "timeEnd",
     "duration",
     "players",
 ]
 
-RELEVANT_KEYS_DATA_PLAYERS = [
+_RELEVANT_KEYS_DATA_PLAYERS = [
     "account",
     "group",
     "hasCommanderTag",
@@ -34,28 +36,35 @@ RELEVANT_KEYS_DATA_PLAYERS = [
 ]
 
 
-def fetch_log(id: str):
-    return requests.get(f"https://dps.report/getJson?id={id}")
-
-
-def filter_log_data(data: dict):
+def _filter_log_data(data: dict):
     for key in list(data.keys()):
-        if key not in RELEVANT_KEYS_DATA:
+        if key not in _RELEVANT_KEYS_DATA:
             del data[key]
 
     for player in data['players']:
         for key in list(player.keys()):
-            if key not in RELEVANT_KEYS_DATA_PLAYERS:
+            if key not in _RELEVANT_KEYS_DATA_PLAYERS:
                 del player[key]
 
     return data
 
 
-def fetch_data(userToken: str):
+# @st.cache() XXX: st.cache does not seem to work inside separate thread
+def fetch_log(id: str):
+    return requests.get(f"https://dps.report/getJson?id={id}")
+
+
+@st.cache(ttl=120)
+def fetch_log_list(userToken):
     response = requests.get(
         f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
     logList = response.json()
+    return logList
+
+
+@st.cache(suppress_st_warning=True)
+def fetch_log_data(logList):
 
     # logList.keys()=dict_keys([
     #   'pages'
@@ -97,7 +106,7 @@ def fetch_data(userToken: str):
             'metaData': {},
             'data': {}
         }
-        for key in RELEVANT_KEYS_LIST:
+        for key in _RELEVANT_KEYS_LIST:
             logsData[log['id']]['metaData'][key] = log[key]
 
     # Merge all the promises
@@ -105,10 +114,10 @@ def fetch_data(userToken: str):
         response = promise['logPromise'].result()
         response.raise_for_status()
         data = response.json()
-        logsData[promise['id']]['data'] = filter_log_data(data)
+        logsData[promise['id']]['data'] = _filter_log_data(data)
 
     return logsData
 
 
 if __name__ == "__main__":
-    print(fetch_data(sys.argv[1]))
+    print(fetch_log_data(sys.argv[1]))

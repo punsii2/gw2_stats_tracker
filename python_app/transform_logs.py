@@ -1,9 +1,14 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 
+def explode_apply(df: pd.DataFrame, column: str):
+    return pd.concat([df.drop(columns=[column]), df.explode(
+        column)[column].apply(pd.Series)], axis=1)
+
+
+@st.cache()
 def transform_data(logData: dict) -> pd.DataFrame:
-    print('------------------------')
     df = pd.DataFrame(logData).transpose()
 
     # expand metadata and data columns
@@ -12,25 +17,20 @@ def transform_data(logData: dict) -> pd.DataFrame:
     df = metadata.join(data)
 
     # create a separate row for each player of a fight
-    df = df.explode('players')
-    # expand player columns
-    players = df['players'].apply(pd.Series)
-    st.write(players.shape)
+    players = df.explode('players')['players'].apply(pd.Series)
+    # and join to original dataFrame
     df = df.drop(columns=['players'])
-    st.write(df.shape)
-    df = df.join(players)  # XXX join at id -> dont create new entries
-    st.write(df.shape)
-    return df
+    df = df.join(players)
 
-    # 'support' is actually a list with 1 element in it
-    df = df.explode('support')
-    # expand support columns
-    support = df['support'].apply(pd.Series)
-    df = df.drop(columns=['support'])
-    df = df.join(support)
+    # XXX need to look at this again
+    df = df.drop(columns=['squadBuffsActive'], axis=1)
 
-    # return
-    df = df.drop(columns=['squadBuffsActive'])
-    df = df.drop(columns=['dpsAll'])
-    df = df.drop(columns=['statsAll'])
+    # create a separate row for each stat
+    for column in ['dpsAll', 'support', 'statsAll']:
+        df = explode_apply(df, column)
+
+    # Fix datetime columns
+    df['timeStart'] = pd.to_datetime(df['timeStart'])
+    df['timeEnd'] = pd.to_datetime(df['timeEnd'])
+    df = df.sort_values('timeStart').reset_index(drop=True)
     return df
