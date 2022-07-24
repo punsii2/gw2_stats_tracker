@@ -1,15 +1,36 @@
 import concurrent.futures
 import sys
+import threading
 
+import pandas as pd
 import requests
 import streamlit as st
+from streamlit.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
-_RELEVANT_KEYS_LIST = [
+# logList.keys()=dict_keys([
+#   'pages'
+#   'totalUploads'
+#   'userToken'
+#   'uploads'
+# ])
+
+_RELEVANT_KEYS_METADATA = [
+    # logList['uploads'][0].keys()=dict_keys([
     "id",
     "permalink",
     "uploadTime",
     "encounterTime",
-    # "players", The player list is also part or the dataset
+    #  'generator'
+    #  'generatorId'
+    #  'generatorVersion'
+    #  'language'
+    #  'languageId'
+    #  'evtc'
+    #  'players' The player list is also part or the dataset
+    #  'encounter'
+    #  'report'
+    #  'tempApiId'
+    # ])
 ]
 
 _RELEVANT_KEYS_DATA = [
@@ -25,7 +46,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "hasCommanderTag",
     "profession",
     "support",
-    "squadBuffsActive",
+    # "squadBuffsActive", XXX TBD
     # "extHealingStats", XXX TBD
     # "extBarrierStats", XXX TBD
     "name",
@@ -36,88 +57,96 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
 ]
 
 
-def _filter_log_data(data: dict):
-    for key in list(data.keys()):
-        if key not in _RELEVANT_KEYS_DATA:
-            del data[key]
+def explode_apply(df: pd.DataFrame, column: str):
+    return pd.concat([df.drop(columns=[column]), df.explode(
+        column)[column].apply(pd.Series)], axis=1)
 
-    for player in data['players']:
+
+def transform_log(log: dict) -> pd.DataFrame:
+    df = pd.DataFrame({k: [v]
+                      for k, v in (log['metaData'] | log['data']).items()})
+
+    # expand metadata and data columns
+    # metadata = df['metaData'].apply(pd.Series)
+    # data = df['data'].apply(pd.Series)
+    # df = metadata.join(data)
+
+    # create a separate row for each player of a fight
+    players = df.explode('players')['players'].apply(pd.Series)
+    # and join to original dataFrame
+    df = df.drop(columns=['players'])
+    df = df.join(players)
+
+    # create a separate row for each stat
+    for column in ['dpsAll', 'support', 'statsAll']:
+        df = explode_apply(df, column)
+
+    # Fix datetime columns
+    df['timeStart'] = pd.to_datetime(df['timeStart'])
+    df['timeEnd'] = pd.to_datetime(df['timeEnd'])
+    return df
+
+
+def filter_log_data(log):
+    for key in list(log['metaData'].keys()):
+        if key not in _RELEVANT_KEYS_METADATA:
+            del log['metaData'][key]
+    for key in list(log['data'].keys()):
+        if key not in _RELEVANT_KEYS_DATA:
+            del log['data'][key]
+    for player in log['data']['players']:
         for key in list(player.keys()):
             if key not in _RELEVANT_KEYS_DATA_PLAYERS:
                 del player[key]
-
-    return data
-
-
-# @st.cache() XXX: st.cache does not seem to work inside separate thread
-def fetch_log(id: str):
-    return requests.get(f"https://dps.report/getJson?id={id}")
+    return log
 
 
-@st.cache(ttl=120)
+def fetch_log_thread_func(log_metadata, streamlit_context):
+    add_script_run_ctx(
+        threading.currentThread(), streamlit_context)
+    return fetch_log(log_metadata)
+
+
+@st.experimental_memo(max_entries=1000)
+def fetch_log(log_metadata):
+    data_response = requests.get(
+        f"https://dps.report/getJson?id={log_metadata['id']}")
+    data_response.raise_for_status()
+    log = filter_log_data({
+        'metaData': log_metadata,
+        'data': data_response.json()
+    })
+    log = transform_log(log)
+    return log
+
+
+@st.experimental_memo(ttl=120)
 def fetch_log_list(userToken):
     response = requests.get(
         f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
-    logList = response.json()
-    return logList
+    return response.json()
 
 
-@st.cache(suppress_st_warning=True)
+@st.experimental_memo(max_entries=3)
 def fetch_log_data(logList):
 
-    # logList.keys()=dict_keys([
-    #   'pages'
-    #   'totalUploads'
-    #   'userToken'
-    #   'uploads'
-    # ])
-    # logList['uploads'][0].keys()=dict_keys([
-    #  'id'
-    #  'permalink'
-    #  'uploadTime'
-    #  'encounterTime'
-    #  'generator'
-    #  'generatorId'
-    #  'generatorVersion'
-    #  'language'
-    #  'languageId'
-    #  'evtc'
-    #  'players'
-    #  'encounter'
-    #  'report'
-    #  'tempApiId'
-    # ])
     uploads = logList['uploads']
 
-    # Fetch all data
-    with concurrent.futures.ThreadPoolExecutor() as executor:  # optimally defined number of threads
-        logPromises = [
-            {
-                "id": log['id'],
-                "logPromise": executor.submit(fetch_log, log['id'])
-            } for log in uploads
-        ]
-        concurrent.futures.wait([entry['logPromise'] for entry in logPromises])
+    # Fetch all data in multiple threads
+    log_data = pd.DataFrame()
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        streamlit_context = get_script_run_ctx()
+        logPromises = [executor.submit(fetch_log_thread_func, log, streamlit_context)
+                       for log in uploads]
+        # Merge all the promises
+        for promise in concurrent.futures.as_completed(logPromises):
+            log_data = pd.concat([log_data, promise.result()])
 
-    logsData = {}
-    for log in uploads:
-        logsData[log['id']] = {
-            'metaData': {},
-            'data': {}
-        }
-        for key in _RELEVANT_KEYS_LIST:
-            logsData[log['id']]['metaData'][key] = log[key]
-
-    # Merge all the promises
-    for promise in logPromises:
-        response = promise['logPromise'].result()
-        response.raise_for_status()
-        data = response.json()
-        logsData[promise['id']]['data'] = _filter_log_data(data)
-
-    return logsData
+    log_data = log_data.sort_values('timeStart').reset_index(drop=True)
+    return log_data
 
 
 if __name__ == "__main__":
-    print(fetch_log_data(sys.argv[1]))
+    log_list = fetch_log_list(sys.argv[1])
+    print(fetch_log_data(log_list))

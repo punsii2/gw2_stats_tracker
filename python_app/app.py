@@ -2,15 +2,13 @@ import plotly.express as px
 import streamlit as st
 
 from fetch_logs import fetch_log_data, fetch_log_list
-from transform_logs import transform_data
 
 
 def get_data(userToken: str):
     if not userToken:
         return None
     logList = fetch_log_list(userToken)
-    logData = fetch_log_data(logList)
-    df = transform_data(logData)
+    df = fetch_log_data(logList)
     return df
 
 
