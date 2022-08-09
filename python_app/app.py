@@ -1,4 +1,5 @@
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import fetch_log_data, fetch_log_list
@@ -55,26 +56,17 @@ rolling_average_window = st.sidebar.slider(
 df["result"] = df.groupby(group_by)[stat_selector].rolling(
     rolling_average_window).mean().reset_index(0, drop=True)
 
-# plot
+# box plots
+fig = go.Figure()
+for k, v in df.groupby(group_by):
+    fig.add_trace(go.Box(y=v[stat_selector], name=k,
+                  boxpoints="all", jitter=1, pointpos=0))
+st.write(fig)
+
+# rollin average line charts
 fig = px.line(df, x="timeStart", y="result",
               color=group_by, title=stat_selector)
 fig.update_traces(mode='markers+lines')
 fig.layout = dict(xaxis=dict(
     type="category", categoryorder='category ascending'))
-st.plotly_chart(fig)
-
-# XXX: other Rolling version
-# fig = px.scatter(df, x="timeStart", y=stat_selector, color=group_by,
-#                  title=f"{stat_selector} (avg of {rolling_average_window})", trendline="rolling", trendline_options=dict(window=rolling_average_window))
-# # fig.update_traces(mode='markers+lines')
-# fig.data = [t for t in fig.data if t.mode == "lines"]
-# # trendlines have showlegend=False by default
-# fig.update_traces(showlegend=True)
-# fig.layout = dict(xaxis=dict(
-#     type="category", categoryorder='category ascending'))
-# st.plotly_chart(fig)
-
-
-# @TODO: altair alternative
-# fig = alt.Chart(df).mark_line().encode(x="timeStart", y="dps", color="name")
-# st.altair_chart(fig)
+st.write(fig)
