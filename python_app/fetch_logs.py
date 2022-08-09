@@ -50,7 +50,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "extHealingStats", XXX TBD
     # "extBarrierStats", XXX TBD
     "name",
-    "healing",
+    # "healing", XXX this is either 10 or 0 -> not usefull
     "dpsAll",
     "statsAll",
     "outgoingHealing"
@@ -66,11 +66,6 @@ def transform_log(log: dict) -> pd.DataFrame:
     df = pd.DataFrame({k: [v]
                       for k, v in (log['metaData'] | log['data']).items()})
 
-    # expand metadata and data columns
-    # metadata = df['metaData'].apply(pd.Series)
-    # data = df['data'].apply(pd.Series)
-    # df = metadata.join(data)
-
     # create a separate row for each player of a fight
     players = df.explode('players')['players'].apply(pd.Series)
     # and join to original dataFrame
@@ -80,6 +75,10 @@ def transform_log(log: dict) -> pd.DataFrame:
     # create a separate row for each stat
     for column in ['dpsAll', 'support', 'statsAll']:
         df = explode_apply(df, column)
+
+    # cleanup data
+    df['skillCastUptime'] = df['skillCastUptime'].clip(-5, 105)
+    df['skillCastUptimeNoAA'] = df['skillCastUptimeNoAA'].clip(-5, 105)
 
     # Fix datetime columns
     df['timeStart'] = pd.to_datetime(df['timeStart'])
