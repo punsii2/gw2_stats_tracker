@@ -50,10 +50,26 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "extHealingStats", XXX TBD
     # "extBarrierStats", XXX TBD
     "name",
-    # "healing", XXX this is either 10 or 0 -> not usefull
+    # "healing", XXX -> always 0 or 10
     "dpsAll",
     "statsAll",
-    "outgoingHealing"
+    # "outgoingHealing" XXX does not show up anymore?
+]
+
+_DROP_KEYS = [
+    "damage",  # -> dps
+    "condiDamage",  # -> condiDps
+    "powerDamage",  # -> powerDps
+    "breakbarDamage",  # -> always 0
+    "actorDamage",  # -> same as damge
+    "actorCondiDps",  # -> ...
+    "actorCondiDamage",  # -> ...
+    "actorPowerDps",  # -> ...
+    "actorPowerDamage",  # -> ...
+    "actorBreakbarDamage",  # -> ...
+    "condiCleanseTime",  # -> condiCleanse
+    "condiCleanseTimeSelf",  # -> ...
+    "boonStripsTime",  # -> ...
 ]
 
 
@@ -80,7 +96,10 @@ def transform_log(log: dict) -> pd.DataFrame:
     df['skillCastUptime'] = df['skillCastUptime'].clip(-5, 105)
     df['skillCastUptimeNoAA'] = df['skillCastUptimeNoAA'].clip(-5, 105)
 
-    # Fix datetime columns
+    # filter useless data
+    df = df.drop(columns=_DROP_KEYS)
+
+    # fix datetime columns
     df['timeStart'] = pd.to_datetime(df['timeStart'])
     df['timeEnd'] = pd.to_datetime(df['timeEnd'])
     return df
