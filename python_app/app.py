@@ -52,7 +52,7 @@ if st.checkbox("Show averaged data"):
 
 # compute rolling average
 rolling_average_window = st.sidebar.slider(
-    "Rolling Avgerage Window Size:", 1, 25)
+    "Rolling Avgerage Window Size:", 1, 25, 5)
 df["result"] = df.groupby(group_by)[stat_selector].rolling(
     rolling_average_window).mean().reset_index(0, drop=True)
 

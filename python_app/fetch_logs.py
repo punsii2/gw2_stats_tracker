@@ -46,9 +46,9 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "hasCommanderTag",
     "profession",
     "support",
-    # "squadBuffsActive", XXX TBD
+    # "squadBuffsActive", XXX TBD complicated since buff ids have to be mapped to names
     # "extHealingStats", XXX TBD
-    # "extBarrierStats", XXX TBD
+    # "extBarrierStats", XXX TBD (also seems to be inaccurate)
     "name",
     # "healing", XXX -> always 0 or 10
     "dpsAll",
@@ -70,6 +70,9 @@ _DROP_KEYS = [
     "condiCleanseTime",  # -> condiCleanse
     "condiCleanseTimeSelf",  # -> ...
     "boonStripsTime",  # -> ...
+    "connectedDamageCount",  # -> unclear
+    "connectedDirectDamageCount",  # -> unclear
+    "critableDirectDamageCount",  # -> unclear
 ]
 
 
@@ -91,6 +94,14 @@ def transform_log(log: dict) -> pd.DataFrame:
     # create a separate row for each stat
     for column in ['dpsAll', 'support', 'statsAll']:
         df = explode_apply(df, column)
+
+    # XXX TBD: healing stats has do be done extra...
+    # st.write(df['extHealingStats'])
+    # df['hps'] = df['extHealingStats']['outgoingHealing'][0]['hps']
+    # df['healing'] = df['extHealingStats']['outgoingHealing'][0]['healing']
+    # df['downedHps'] = df['extHealingStats']['outgoingHealing'][0]['downedHps']
+    # df['downedHealing'] = df['extHealingStats']['outgoingHealing'][0]['downedHealing']
+    # df = df.drop(columns='extHealingStats')
 
     # cleanup data
     df['skillCastUptime'] = df['skillCastUptime'].clip(-5, 105)
@@ -121,7 +132,7 @@ def filter_log_data(log):
 
 def fetch_log_thread_func(log_metadata, streamlit_context):
     add_script_run_ctx(
-        threading.currentThread(), streamlit_context)
+        threading.current_thread(), streamlit_context)
     return fetch_log(log_metadata)
 
 
@@ -167,4 +178,5 @@ def fetch_log_data(logList):
 
 if __name__ == "__main__":
     log_list = fetch_log_list(sys.argv[1])
-    print(fetch_log_data(log_list))
+    print(fetch_log_data(log_list)[
+          'extHealingStats'][20]['outgoingHealing'][0]['hps'])
