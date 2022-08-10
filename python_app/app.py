@@ -46,24 +46,32 @@ if professions:
 if st.checkbox("Show raw data"):
     f"df (filtered) {df.shape}:", df
 
+groups = df.groupby(group_by)
+mean = groups.mean().drop(
+    columns=['uploadTime', 'encounterTime'])
 if st.checkbox("Show averaged data"):
-    mean = df.groupby(group_by).mean()
     f"df (filtered) {mean.shape}:", mean
 
-# compute rolling average
-rolling_average_window = st.sidebar.slider(
-    "Rolling Avgerage Window Size:", 1, 25, 5)
-df["result"] = df.groupby(group_by)[stat_selector].rolling(
-    rolling_average_window).mean().reset_index(0, drop=True)
 
 # box plots
 fig = go.Figure()
-for k, v in df.groupby(group_by):
-    fig.add_trace(go.Box(y=v[stat_selector], name=k,
-                  boxpoints="all", jitter=1, pointpos=0))
+sorted_keys = mean[stat_selector].sort_values()
+box_or_violin = st.selectbox("Violin Plot or Box Plot:", ['Violin', 'Box'])
+for group in sorted_keys.index:
+    if box_or_violin == "Box":
+        fig.add_trace(go.Box(y=groups.get_group(group)[stat_selector], name=group,
+                             boxpoints="all", jitter=1, pointpos=0, boxmean=True, mean=[sorted_keys[group]]))
+    else:
+        fig.add_trace(go.Violin(y=groups.get_group(group)[stat_selector], name=group,
+                                points="all", jitter=1, pointpos=0, meanline_visible=True))
+fig.update_layout(legend_traceorder='reversed')
 st.write(fig)
 
-# rollin average line charts
+# rollin average
+rolling_average_window = st.slider(
+    "Rolling Avgerage Window Size:", 1, 25, 5)
+df["result"] = df.groupby(group_by)[stat_selector].rolling(
+    rolling_average_window).mean().reset_index(0, drop=True)
 fig = px.line(df, x="timeStart", y="result",
               color=group_by, title=stat_selector)
 fig.update_traces(mode='markers+lines')
