@@ -1,11 +1,11 @@
 import concurrent.futures
 import sys
-import threading
+import time
 
 import pandas as pd
 import requests
 import streamlit as st
-from streamlit.scriptrunner import add_script_run_ctx, get_script_run_ctx
+from streamlit.scriptrunner import add_script_run_ctx
 
 # logList.keys()=dict_keys([
 #   'pages'
@@ -56,12 +56,14 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
+# These are keyes where i dont see a scenario in which they would
+# contain information that another key would not also contain.
 _DROP_KEYS = [
     "damage",  # -> dps
     "condiDamage",  # -> condiDps
     "powerDamage",  # -> powerDps
     "breakbarDamage",  # -> always 0
-    "actorDamage",  # -> same as damge
+    "actorDamage",  # -> almost same as damge
     "actorCondiDps",  # -> ...
     "actorCondiDamage",  # -> ...
     "actorPowerDps",  # -> ...
@@ -95,7 +97,7 @@ def transform_log(log: dict) -> pd.DataFrame:
     for column in ['dpsAll', 'support', 'statsAll']:
         df = explode_apply(df, column)
 
-    # XXX TBD: healing stats has do be done extra...
+    # XXX TBD: healing stats has do be done extra
     # st.write(df['extHealingStats'])
     # df['hps'] = df['extHealingStats']['outgoingHealing'][0]['hps']
     # df['healing'] = df['extHealingStats']['outgoingHealing'][0]['healing']
@@ -104,8 +106,12 @@ def transform_log(log: dict) -> pd.DataFrame:
     # df = df.drop(columns='extHealingStats')
 
     # cleanup data
-    df['skillCastUptime'] = df['skillCastUptime'].clip(-5, 105)
-    df['skillCastUptimeNoAA'] = df['skillCastUptimeNoAA'].clip(-5, 105)
+    # skillCastUptime does not exist in older versions
+    # Alswo some of the values in skillCastUptime are clearly wrong
+    if 'skillCastUptime' in df:
+        df['skillCastUptime'] = df['skillCastUptime'].clip(-5, 105)
+    if 'skillCastUptimeNoAA' in df:
+        df['skillCastUptimeNoAA'] = df['skillCastUptimeNoAA'].clip(-5, 105)
 
     # filter useless data
     df = df.drop(columns=_DROP_KEYS)
@@ -130,9 +136,10 @@ def filter_log_data(log):
     return log
 
 
-def fetch_log_thread_func(log_metadata, streamlit_context):
-    add_script_run_ctx(
-        threading.current_thread(), streamlit_context)
+def fetch_log_thread_func(log_metadata):
+    # This gives the main thread time to call add_script_run_ctx, which does not work from the child thread
+    time.sleep(1)
+
     return fetch_log(log_metadata)
 
 
@@ -165,9 +172,11 @@ def fetch_log_data(logList):
     # Fetch all data in multiple threads
     log_data = pd.DataFrame()
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        streamlit_context = get_script_run_ctx()
-        logPromises = [executor.submit(fetch_log_thread_func, log, streamlit_context)
+        logPromises = [executor.submit(fetch_log_thread_func, log)
                        for log in uploads]
+
+        for thread in executor._threads:
+            add_script_run_ctx(thread)
         # Merge all the promises
         for promise in concurrent.futures.as_completed(logPromises):
             log_data = pd.concat([log_data, promise.result()])
