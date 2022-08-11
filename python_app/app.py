@@ -35,13 +35,14 @@ character_name_filter = st.sidebar.multiselect(
     "Filter Character Names:", df.name.unique())
 profession_filter = st.sidebar.multiselect(
     "Filter Professions:", df.profession.unique())
-dates = df['timeStart'].map(pd.Timestamp.date).unique()
+
+dates = df['timeStart'].map(pd.Timestamp.date)
 start_time, end_time = st.sidebar.select_slider(
     "Filter Dates:", options=dates, value=[dates.min(), dates.max()])
 
 # apply filters
-df = df[(df['timeStart'].map(pd.Timestamp.date) >= start_time)
-        & (df['timeStart'].map(pd.Timestamp.date) <= end_time)]
+df = df[(dates >= start_time)
+        & (dates <= end_time)]
 if character_name_filter:
     df = df[df['name'].isin(character_name_filter)]
 if account_name_filter:
