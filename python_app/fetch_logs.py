@@ -4,7 +4,7 @@ import threading
 import pandas as pd
 import requests
 import streamlit as st
-from streamlit.scriptrunner import add_script_run_ctx
+from streamlit.runtime.scriptrunner import add_script_run_ctx
 
 # logList.keys()=dict_keys([
 #   'pages'
