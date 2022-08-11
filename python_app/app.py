@@ -1,3 +1,4 @@
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -23,25 +24,30 @@ df = df_original
 # create inputs
 stats = list(df)
 removed_stats = ['id', 'permalink', 'uploadTime', 'encounterTime', 'timeStart', 'name', 'group',
-                 'timeEnd', 'duration', 'account', 'hasCommanderTag', 'profession', 'healing']
+                 'timeEnd', 'duration', 'account', 'hasCommanderTag', 'profession']
 stat_selector = st.sidebar.selectbox(
     "Select Stats", [stat for stat in stats if stat not in removed_stats])
 group_by = st.sidebar.selectbox("Group by:", ['name', 'account', 'profession'])
 
-account_names = st.sidebar.multiselect(
+account_name_filter = st.sidebar.multiselect(
     "Filter Account Names:", df.account.unique())
-character_names = st.sidebar.multiselect(
+character_name_filter = st.sidebar.multiselect(
     "Filter Character Names:", df.name.unique())
-professions = st.sidebar.multiselect(
+profession_filter = st.sidebar.multiselect(
     "Filter Professions:", df.profession.unique())
+dates = df['timeStart'].map(pd.Timestamp.date).unique()
+start_time, end_time = st.sidebar.select_slider(
+    "Filter Dates:", options=dates, value=[dates.min(), dates.max()])
 
 # apply filters
-if character_names:
-    df = df[df['name'].isin(character_names)]
-if account_names:
-    df = df[df['account'].isin(account_names)]
-if professions:
-    df = df[df['profession'].isin(professions)]
+df = df[(df['timeStart'].map(pd.Timestamp.date) >= start_time)
+        & (df['timeStart'].map(pd.Timestamp.date) <= end_time)]
+if character_name_filter:
+    df = df[df['name'].isin(character_name_filter)]
+if account_name_filter:
+    df = df[df['account'].isin(account_name_filter)]
+if profession_filter:
+    df = df[df['profession'].isin(profession_filter)]
 
 if st.checkbox("Show raw data"):
     f"df (filtered) {df.shape}:", df
