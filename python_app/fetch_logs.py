@@ -116,8 +116,10 @@ def transform_log(log: dict) -> pd.DataFrame:
     df = df.drop(columns=_DROP_KEYS)
 
     # fix datetime columns
-    df['timeStart'] = pd.to_datetime(df['timeStart'])
-    df['timeEnd'] = pd.to_datetime(df['timeEnd'])
+    df['timeStart'] = (pd.to_datetime(df['timeStart']) + pd.DateOffset(hours=6)).apply(
+        lambda x: x.replace(tzinfo=None))
+    df['timeEnd'] = (pd.to_datetime(df['timeEnd']) + pd.DateOffset(hours=6)).apply(
+        lambda x: x.replace(tzinfo=None))
     return df
 
 

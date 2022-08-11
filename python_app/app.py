@@ -35,7 +35,6 @@ character_name_filter = st.sidebar.multiselect(
     "Filter Character Names:", df.name.unique())
 profession_filter = st.sidebar.multiselect(
     "Filter Professions:", df.profession.unique())
-
 dates = df['timeStart'].map(pd.Timestamp.date)
 start_time, end_time = st.sidebar.select_slider(
     "Filter Dates:", options=dates, value=[dates.min(), dates.max()])
