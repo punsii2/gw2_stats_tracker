@@ -107,6 +107,9 @@ def transform_log(log: dict) -> pd.DataFrame:
     # cleanup data
     # skillCastUptime does not exist in older versions
     # Alswo some of the values in skillCastUptime are clearly wrong
+
+    df['distToCom'] = df['distToCom'].clip(-5, 2500)
+    df['stackDist'] = df['stackDist'].clip(-5, 2500)
     if 'skillCastUptime' in df:
         df['skillCastUptime'] = df['skillCastUptime'].clip(-5, 105)
     if 'skillCastUptimeNoAA' in df:
