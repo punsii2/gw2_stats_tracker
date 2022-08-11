@@ -159,14 +159,21 @@ def fetch_log_list(userToken):
     response = requests.get(
         f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
-    return response.json()
+    json = response.json()
+    pages = json['pages']
+    uploads = json['uploads']
+    for page in range(pages-1, pages-4, -1):
+        if page < 1:
+            break
+        response = requests.get(
+            f"https://dps.report/getUploads?userToken={userToken}&page={page+1}")
+        response.raise_for_status()
+        uploads.extend(response.json()['uploads'])
+    return uploads
 
 
 @st.experimental_memo(max_entries=3)
-def fetch_log_data(logList):
-
-    uploads = logList['uploads']
-
+def fetch_log_data(uploads):
     # Fetch all data in multiple threads
     log_data = pd.DataFrame()
     data_list = [None] * len(uploads)
