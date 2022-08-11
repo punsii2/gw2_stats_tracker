@@ -1,6 +1,5 @@
-import concurrent.futures
 import sys
-import time
+import threading
 
 import pandas as pd
 import requests
@@ -136,11 +135,8 @@ def filter_log_data(log):
     return log
 
 
-def fetch_log_thread_func(log_metadata):
-    # This gives the main thread time to call add_script_run_ctx, which does not work from the child thread
-    time.sleep(1)
-
-    return fetch_log(log_metadata)
+def fetch_log_thread_func(data_list, idx, log_metadata):
+    data_list[idx] = fetch_log(log_metadata)
 
 
 @st.experimental_memo(max_entries=1000)
@@ -171,15 +167,18 @@ def fetch_log_data(logList):
 
     # Fetch all data in multiple threads
     log_data = pd.DataFrame()
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        logPromises = [executor.submit(fetch_log_thread_func, log)
-                       for log in uploads]
-
-        for thread in executor._threads:
-            add_script_run_ctx(thread)
-        # Merge all the promises
-        for promise in concurrent.futures.as_completed(logPromises):
-            log_data = pd.concat([log_data, promise.result()])
+    data_list = [None] * len(uploads)
+    thread_list = []
+    for idx, log in enumerate(uploads):
+        thread = threading.Thread(
+            target=fetch_log_thread_func, args=[data_list, idx, log])
+        thread = add_script_run_ctx(thread)
+        thread_list.append(thread)
+        thread.start()
+    for t in thread_list:
+        t.join()
+    for data in data_list:
+        log_data = pd.concat([log_data, data])
 
     log_data = log_data.sort_values('timeStart').reset_index(drop=True)
     return log_data
