@@ -15,7 +15,7 @@ def get_data(userToken: str):
 
 
 # fetch data
-userToken = st.sidebar.text_input("arcDPS userToken:", "")
+userToken = st.sidebar.text_input("dps.report userToken:", "")
 if not userToken:
     st.stop()
 df_original = get_data(userToken)
