@@ -170,7 +170,7 @@ def fetch_log_list(userToken):
     return uploads
 
 
-@st.experimental_memo(max_entries=3)
+# @st.experimental_memo(max_entries=3)
 def fetch_log_data(uploads):
     progress_bar = st.progress(0)
     log_data_list = pd.DataFrame()
