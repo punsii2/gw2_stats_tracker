@@ -59,17 +59,15 @@ if st.checkbox("Show averaged data"):
     f"df (filtered) {mean.shape}:", mean
 
 
-# box plots
+# violoin plot
 fig = go.Figure()
 sorted_keys = mean[stat_selector].sort_values()
-box_or_violin = st.selectbox("Violin Plot or Box Plot:", ['Violin', 'Box'])
+# box_or_violin = st.selectbox("Violin Plot or Box Plot:", ['Violin', 'Box'])
 for group in sorted_keys.index:
-    if box_or_violin == "Box":
-        fig.add_trace(go.Box(y=groups.get_group(group)[stat_selector], name=group,
-                             boxpoints="all", jitter=1, pointpos=0, boxmean=True, mean=[sorted_keys[group]]))
-    else:
-        fig.add_trace(go.Violin(y=groups.get_group(group)[stat_selector], name=group,
-                                points="all", jitter=1, pointpos=0, meanline_visible=True))
+    # if box_or_violin == "Box":
+    #     fig.add_trace(go.Box(y=groups.get_group(group)[stat_selector], name=group,
+    fig.add_trace(go.Violin(y=groups.get_group(group)[stat_selector], name=group,
+                            points="all", jitter=1, pointpos=0, meanline_visible=True))
 fig.update_layout(legend_traceorder='reversed')
 st.write(fig)
 
