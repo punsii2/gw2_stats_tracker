@@ -1,5 +1,4 @@
 import sys
-import threading
 
 import pandas as pd
 import requests
@@ -140,10 +139,6 @@ def filter_log_data(log):
     return log
 
 
-def fetch_log_thread_func(data_list, idx, log_metadata):
-    data_list[idx] = fetch_log(log_metadata)
-
-
 @st.experimental_memo(max_entries=1000)
 def fetch_log(log_metadata):
     data_response = requests.get(
@@ -177,23 +172,36 @@ def fetch_log_list(userToken):
 
 @st.experimental_memo(max_entries=3)
 def fetch_log_data(uploads):
-    # Fetch all data in multiple threads
-    log_data = pd.DataFrame()
-    data_list = [None] * len(uploads)
-    thread_list = []
-    for idx, log in enumerate(uploads):
-        thread = threading.Thread(
-            target=fetch_log_thread_func, args=[data_list, idx, log])
-        thread = add_script_run_ctx(thread)
-        thread_list.append(thread)
-        thread.start()
-    for t in thread_list:
-        t.join()
-    for data in data_list:
-        log_data = pd.concat([log_data, data])
+    progress_bar = st.progress(0)
+    log_data_list = pd.DataFrame()
+    num_logs = len(uploads)
+    for idx, log_metadata in enumerate(uploads):
+        progress_bar.progress(idx/num_logs)
+        log_data_list = pd.concat([log_data_list, fetch_log(log_metadata)])
 
-    log_data = log_data.sort_values('timeStart').reset_index(drop=True)
-    return log_data
+    # XXX streamlit caching does not work with multiple threads...
+    # import threading
+    # def fetch_log_thread_func(data_list, idx, log_metadata):
+    #     data_list[idx] = fetch_log(log_metadata)
+    # Fetch all data in multiple threads
+    # data_list = [None] * len(uploads)
+    # thread_list = []
+    # for idx, log in enumerate(uploads):
+    #     thread = threading.Thread(
+    #         target=fetch_log_thread_func, args=[data_list, idx, log])
+    #     thread = add_script_run_ctx(thread)
+    #     thread_list.append(thread)
+    #     thread.start()
+    # for t in thread_list:
+    #     t.join()
+    # for data in data_list:
+    #     log_data = pd.concat([log_data, data])
+
+    log_data_list = log_data_list.sort_values(
+        'timeStart').reset_index(drop=True)
+    progress_bar.progress(100)
+    progress_bar.empty()
+    return log_data_list
 
 
 if __name__ == "__main__":
