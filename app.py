@@ -23,7 +23,7 @@ df = df_original
 
 # create inputs
 stats = list(df)
-removed_stats = ['id', 'permalink', 'uploadTime', 'encounterTime', 'timeStart', 'name', 'group',
+removed_stats = ['id', 'timeStart', 'name', 'group',
                  'timeEnd', 'duration', 'account', 'hasCommanderTag', 'profession']
 stat_selector = st.sidebar.selectbox(
     "Select Stats", [stat for stat in stats if stat not in removed_stats])
@@ -53,8 +53,7 @@ if st.checkbox("Show raw data"):
     f"df (filtered) {df.shape}:", df
 
 groups = df.groupby(group_by)
-mean = groups.mean().drop(
-    columns=['uploadTime', 'encounterTime'])
+mean = groups.mean()
 if st.checkbox("Show averaged data"):
     f"df (filtered) {mean.shape}:", mean
 

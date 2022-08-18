@@ -12,24 +12,24 @@ from streamlit.runtime.scriptrunner import add_script_run_ctx
 #   'uploads'
 # ])
 
-_RELEVANT_KEYS_METADATA = [
-    # logList['uploads'][0].keys()=dict_keys([
-    "id",
-    "permalink",
-    "uploadTime",
-    "encounterTime",
-    #  'generator'
-    #  'generatorId'
-    #  'generatorVersion'
-    #  'language'
-    #  'languageId'
-    #  'evtc'
-    #  'players' The player list is also part or the dataset
-    #  'encounter'
-    #  'report'
-    #  'tempApiId'
-    # ])
-]
+# _RELEVANT_KEYS_METADATA = [
+#     # logList['uploads'][0].keys()=dict_keys([
+#     "id",
+#     "permalink",
+#     "uploadTime",
+#     "encounterTime",
+#     #  'generator'
+#     #  'generatorId'
+#     #  'generatorVersion'
+#     #  'language'
+#     #  'languageId'
+#     #  'evtc'
+#     #  'players' The player list is also part or the dataset
+#     #  'encounter'
+#     #  'report'
+#     #  'tempApiId'
+#     # ])
+# ]
 
 _RELEVANT_KEYS_DATA = [
     "timeStart",
@@ -81,9 +81,8 @@ def explode_apply(df: pd.DataFrame, column: str):
         column)[column].apply(pd.Series)], axis=1)
 
 
-def transform_log(log: dict) -> pd.DataFrame:
-    df = pd.DataFrame({k: [v]
-                      for k, v in (log['metaData'] | log['data']).items()})
+def transform_log(log: dict, log_id: str) -> pd.DataFrame:
+    df = pd.DataFrame({k: [v] for k, v in ({'id': log_id} | log).items()})
 
     # create a separate row for each player of a fight
     players = df.explode('players')['players'].apply(pd.Series)
@@ -126,13 +125,10 @@ def transform_log(log: dict) -> pd.DataFrame:
 
 
 def filter_log_data(log):
-    for key in list(log['metaData'].keys()):
-        if key not in _RELEVANT_KEYS_METADATA:
-            del log['metaData'][key]
-    for key in list(log['data'].keys()):
+    for key in list(log.keys()):
         if key not in _RELEVANT_KEYS_DATA:
-            del log['data'][key]
-    for player in log['data']['players']:
+            del log[key]
+    for player in log['players']:
         for key in list(player.keys()):
             if key not in _RELEVANT_KEYS_DATA_PLAYERS:
                 del player[key]
@@ -140,20 +136,15 @@ def filter_log_data(log):
 
 
 @st.experimental_memo(max_entries=1000)
-def fetch_log(log_metadata):
+def fetch_log(log_id: str):
     data_response = requests.get(
-        f"https://dps.report/getJson?id={log_metadata['id']}")
+        f"https://dps.report/getJson?id={log_id}")
     data_response.raise_for_status()
-    log = filter_log_data({
-        'metaData': log_metadata,
-        'data': data_response.json()
-    })
-    log = transform_log(log)
-    return log
+    return transform_log(filter_log_data(data_response.json()), log_id)
 
 
 @st.experimental_memo(ttl=120)
-def fetch_log_list(userToken):
+def fetch_log_list(userToken: str):
     response = requests.get(
         f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
@@ -177,7 +168,8 @@ def fetch_log_data(uploads):
     num_logs = len(uploads)
     for idx, log_metadata in enumerate(uploads):
         progress_bar.progress(idx/num_logs)
-        log_data_list = pd.concat([log_data_list, fetch_log(log_metadata)])
+        log_data_list = pd.concat(
+            [log_data_list, fetch_log(log_metadata["id"])])
 
     # XXX streamlit caching does not work with multiple threads...
     # import threading
