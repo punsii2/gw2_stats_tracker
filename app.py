@@ -1,12 +1,11 @@
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import fetch_log_data, fetch_log_list
 
 
-def get_data(userToken: str):
+def fetch_data(userToken: str):
     if not userToken:
         return None
     logList = fetch_log_list(userToken)
@@ -18,16 +17,24 @@ def get_data(userToken: str):
 userToken = st.sidebar.text_input("dps.report userToken:", "")
 if not userToken:
     st.stop()
-df_original = get_data(userToken)
-df = df_original
+df = fetch_data(userToken)
 
 # create inputs
 stats = list(df)
-removed_stats = ['id', 'timeStart', 'name', 'group',
-                 'timeEnd', 'duration', 'account', 'hasCommanderTag', 'profession']
+unselectable_stats = ['id', 'timeStart', 'profession', 'name', 'profession+name', 'group', 'spec_color',
+                      'timeEnd', 'duration', 'account', 'hasCommanderTag']
 stat_selector = st.sidebar.selectbox(
-    "Select Stats", [stat for stat in stats if stat not in removed_stats])
-group_by = st.sidebar.selectbox("Group by:", ['name', 'account', 'profession'])
+    "Select Stats", [stat for stat in stats if stat not in unselectable_stats])
+
+group_by_selection = st.sidebar.selectbox(
+    "Group by:", ['character name', 'character name & profession', 'profession'])
+match group_by_selection:
+    case 'profession':
+        group_by = 'profession'
+    case 'character name':
+        group_by = 'name'
+    case _:
+        group_by = 'profession+name'
 
 account_name_filter = st.sidebar.multiselect(
     "Filter Account Names:", df.account.unique())
@@ -52,6 +59,7 @@ if profession_filter:
 if st.checkbox("Show raw data"):
     f"df (filtered) {df.shape}:", df
 
+
 groups = df.groupby(group_by)
 mean = groups.mean()
 if st.checkbox("Show averaged data"):
@@ -61,23 +69,36 @@ if st.checkbox("Show averaged data"):
 # violoin plot
 fig = go.Figure()
 sorted_keys = mean[stat_selector].sort_values()
-# box_or_violin = st.selectbox("Violin Plot or Box Plot:", ['Violin', 'Box'])
 for group in sorted_keys.index:
-    # if box_or_violin == "Box":
-    #     fig.add_trace(go.Box(y=groups.get_group(group)[stat_selector], name=group,
-    fig.add_trace(go.Violin(y=groups.get_group(group)[stat_selector], name=group,
-                            points="all", jitter=1, pointpos=0, meanline_visible=True))
+    fig.add_trace(go.Violin(
+        jitter=1,
+        marker={"color": groups.get_group(
+            group)['spec_color'].value_counts().idxmax()},
+        meanline_visible=True,
+        name=group,
+        pointpos=0,
+        points="all",
+        y=groups.get_group(group)[stat_selector],
+    ))
 fig.update_layout(legend_traceorder='reversed')
 st.write(fig)
 
-# rollin average
+# rolling average
 rolling_average_window = st.slider(
     "Rolling Avgerage Window Size:", 1, 25, 5)
-df["result"] = df.groupby(group_by)[stat_selector].rolling(
+df["rolling_average"] = df.groupby(group_by)[stat_selector].rolling(
     rolling_average_window).mean().reset_index(0, drop=True)
-fig = px.line(df, x="timeStart", y="result",
-              color=group_by, title=stat_selector)
-fig.update_traces(mode='markers+lines')
+fig = go.Figure()
+for group in sorted_keys.index:
+    fig.add_trace(go.Scatter(
+        marker={"color": groups.get_group(
+            group)['spec_color'].value_counts().idxmax()},
+        mode="markers+lines",
+        name=group,
+        x=groups.get_group(group)['timeStart'],
+        y=groups.get_group(group)["rolling_average"],
+    ))
+fig.update_layout(legend_traceorder='reversed')
 fig.layout = dict(xaxis=dict(
     type="category", categoryorder='category ascending'))
 st.write(fig)

@@ -3,7 +3,11 @@ import sys
 import pandas as pd
 import requests
 import streamlit as st
-from streamlit.runtime.scriptrunner import add_script_run_ctx
+
+from color_lib import spec_color_map
+
+# from streamlit.runtime.scriptrunner import add_script_run_ctx #XXX caching seems to broken in multiple threads... maybe try again another time
+
 
 # logList.keys()=dict_keys([
 #   'pages'
@@ -54,14 +58,15 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
-# These are keyes where i dont see a scenario in which they would
+# These are keys where i dont see a scenario in which they would
 # contain information that another key would not also contain.
 _DROP_KEYS = [
     "damage",  # -> dps
     "condiDamage",  # -> condiDps
     "powerDamage",  # -> powerDps
     "breakbarDamage",  # -> always 0
-    "actorDamage",  # -> almost same as damge
+    "actorDps",  # -> almost the same as dps
+    "actorDamage",  # -> ...
     "actorCondiDps",  # -> ...
     "actorCondiDamage",  # -> ...
     "actorPowerDps",  # -> ...
@@ -90,7 +95,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     df = df.drop(columns=['players'])
     df = df.join(players)
 
-    # create a separate row for each stat
+    # create a separate column for each stat
     for column in ['dpsAll', 'support', 'statsAll']:
         df = explode_apply(df, column)
 
@@ -102,10 +107,15 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # df['downedHealing'] = df['extHealingStats']['outgoingHealing'][0]['downedHealing']
     # df = df.drop(columns='extHealingStats')
 
+    # add some helper columns
+    df['spec_color'] = df['profession'].apply(
+        lambda spec: spec_color_map[spec])
+    df['profession+name'] = df['profession'].apply(
+        lambda s: s+' | ') + df['name']
+
     # cleanup data
     # skillCastUptime does not exist in older versions
-    # Alswo some of the values in skillCastUptime are clearly wrong
-
+    # Also some of the values in skillCastUptime are clearly wrong
     df['distToCom'] = df['distToCom'].clip(-5, 2500)
     df['stackDist'] = df['stackDist'].clip(-5, 2500)
     if 'skillCastUptime' in df:
