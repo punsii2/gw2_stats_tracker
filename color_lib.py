@@ -1,5 +1,9 @@
 def _spec_to_rgba(class_name: str, ratio: int) -> str:
-    return "rgba(" + ','.join([str(round(c * ratio)) for c in _PROFESSION_COLOR_MAP[class_name]]) + ",1)"
+    return (
+        "rgba("
+        + ",".join([str(round(c * ratio)) for c in _PROFESSION_COLOR_MAP[class_name]])
+        + ",1)"
+    )
 
 
 _PROFESSION_COLOR_MAP = {
