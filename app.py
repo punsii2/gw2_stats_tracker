@@ -2,14 +2,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from fetch_logs import fetch_log_data, fetch_log_list
+from fetch_logs import fetch_logs, fetch_log_list
 
 
 def fetch_data(userToken: str):
-    if not userToken:
-        return None
     logList = fetch_log_list(userToken)
-    df = fetch_log_data(logList)
+    df = fetch_logs(logList)
     return df
 
 
