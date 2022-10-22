@@ -98,7 +98,7 @@ for group in sorted_keys.index:
             y=groups.get_group(group)[stat_selector],
         )
     )
-fig.update_layout(legend_traceorder="reversed")
+fig.update_layout(title=stat_selector, title_x=0.5, legend_traceorder="reversed")
 st.write(fig)
 
 # rolling average
@@ -121,6 +121,6 @@ for group in sorted_keys.index:
             y=groups.get_group(group)["rolling_average"],
         )
     )
-fig.update_layout(legend_traceorder="reversed")
+fig.update_layout(title=stat_selector, title_x=0.5, legend_traceorder="reversed")
 fig.layout = {"xaxis": {"type": "category", "categoryorder": "category ascending"}}
 st.write(fig)

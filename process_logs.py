@@ -46,8 +46,8 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "support",
     # "squadBuffsActive", XXX TBD complicated since buff ids have to be mapped to names
     "activeTimes",
-    # "extHealingStats", XXX TBD
-    # "extBarrierStats", XXX TBD (also seems to be inaccurate)
+    "extHealingStats",
+    "extBarrierStats",
     "name",
     # "healing", XXX -> always 0 or 10
     "dpsAll",
@@ -120,14 +120,19 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # create a separate column for each stat
     for column in ["dpsAll", "support", "statsAll"]:
         df = explode_apply(df, column)
-
-    # XXX TBD: healing stats has do be done extra
-    # st.write(df['extHealingStats'])
-    # df['hps'] = df['extHealingStats']['outgoingHealing'][0]['hps']
-    # df['healing'] = df['extHealingStats']['outgoingHealing'][0]['healing']
-    # df['downedHps'] = df['extHealingStats']['outgoingHealing'][0]['downedHps']
-    # df['downedHealing'] = df['extHealingStats']['outgoingHealing'][0]['downedHealing']
-    # df = df.drop(columns='extHealingStats')
+    if "extHealingStats" in df.columns:
+        df["healing"] = df["extHealingStats"].apply(
+            lambda x: x["outgoingHealing"][0]["hps"]
+        )
+        df["downedHealing"] = df["extHealingStats"].apply(
+            lambda x: x["outgoingHealing"][0]["downedHps"]
+        )
+        df = df.drop(columns="extHealingStats")
+    if "extBarrierStats" in df.columns:
+        df["barrier"] = df["extBarrierStats"].apply(
+            lambda x: x["outgoingBarrier"][0]["bps"]
+        )
+        df = df.drop(columns="extBarrierStats")
 
     # filter useless columns
     df = df.drop(columns=_DROP_KEYS)
