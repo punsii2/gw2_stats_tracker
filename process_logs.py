@@ -45,6 +45,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "profession",
     "support",
     # "squadBuffsActive", XXX TBD complicated since buff ids have to be mapped to names
+    "activeTimes",
     # "extHealingStats", XXX TBD
     # "extBarrierStats", XXX TBD (also seems to be inaccurate)
     "name",
@@ -76,6 +77,30 @@ _DROP_KEYS = [
     "critableDirectDamageCount",  # -> unclear
 ]
 
+# Values that need to be divided by the active time (how long the player actually participated)
+_DIVIDE_BY_TIME_KEYS = [
+    "resurrects",
+    "resurrectTime",
+    "condiCleanse",
+    "condiCleanseSelf",
+    "boonStrips",
+    "wasted",
+    "timeWasted",
+    "saved",
+    "timeSaved",
+    "swapCount",
+    "totalDamageCount",
+    "directDamageCount",
+    "criticalDmg",
+    "missed",
+    "evaded",
+    "blocked",
+    "interrupts",
+    "invulned",
+    "killed",
+    "downed",
+]
+
 
 def explode_apply(df: pd.DataFrame, column: str):
     return pd.concat(
@@ -104,6 +129,9 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # df['downedHealing'] = df['extHealingStats']['outgoingHealing'][0]['downedHealing']
     # df = df.drop(columns='extHealingStats')
 
+    # filter useless columns
+    df = df.drop(columns=_DROP_KEYS)
+
     # add some helper columns
     df["spec_color"] = df["profession"].apply(lambda spec: spec_color_map[spec])
     df["profession+name"] = df["profession"].apply(lambda s: s + " | ") + df["name"]
@@ -118,8 +146,19 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     if "skillCastUptimeNoAA" in df:
         df["skillCastUptimeNoAA"] = df["skillCastUptimeNoAA"].clip(-5, 105)
 
-    # filter useless data
-    df = df.drop(columns=_DROP_KEYS)
+    # absolute values are way less accurate than values per second, so transform some of them
+    df["activeTimes"] = df["activeTimes"].apply(lambda x: x[0] / 1000)
+    for key in _DIVIDE_BY_TIME_KEYS:
+        # special treatment for skillCastUptime again... XXX: remove if no longer needed
+        if (key in ["skillCastUptime", "skillCastUptimeNoAA"]) and (
+            "skillCastUptime" not in df or "skillCastUptimeNoAA" not in df
+        ):
+            continue
+        df[key] = df[key] / df["activeTimes"]
+
+    # add "percentage alive" as it is more understandable than "activeTimes" and fix the "duration" for that
+    df["duration"] = pd.to_timedelta(df["duration"]).dt.total_seconds()
+    df["percentageAlive"] = df["activeTimes"] / df["duration"]
 
     # fix datetime columns
     df["timeStart"] = (pd.to_datetime(df["timeStart"]) + pd.DateOffset(hours=6)).apply(

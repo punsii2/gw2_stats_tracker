@@ -31,6 +31,7 @@ unselectable_stats = [
     "duration",
     "account",
     "hasCommanderTag",
+    "activeTimes",
 ]
 stat_selector = st.sidebar.selectbox(
     "Select Stats", [stat for stat in stats if stat not in unselectable_stats]
@@ -93,6 +94,7 @@ for group in sorted_keys.index:
             name=group,
             pointpos=0,
             points="all",
+            spanmode="hard",
             y=groups.get_group(group)[stat_selector],
         )
     )
