@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -11,8 +13,21 @@ def fetch_data(userToken: str):
     return df
 
 
+# parse userTokens from env
+userTokens = {"Custom": ""}
+if "DPS_REPORT_TOKENS" in os.environ:
+    for token in os.environ["DPS_REPORT_TOKENS"].split(","):
+        name, value = token.split(":")
+        userTokens |= {name: value.strip()}
+
+
 # fetch data
-userToken = st.sidebar.text_input("dps.report userToken:", "")
+userToken = None
+userTokenName = st.sidebar.selectbox("dps.report userToken:", options=userTokens.keys())
+if userTokenName == "Custom":
+    userToken = st.sidebar.text_input("custom token", label_visibility="collapsed")
+else:
+    userToken = userTokens[userTokenName]
 if not userToken:
     st.stop()
 df = fetch_data(userToken)
