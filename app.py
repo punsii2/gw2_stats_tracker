@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from fetch_logs import fetch_logs, fetch_log_list
+from fetch_logs import fetch_log_list, fetch_logs
 
 
 def fetch_data(userToken: str):
@@ -55,13 +55,37 @@ character_name_filter = st.sidebar.multiselect(
 profession_filter = st.sidebar.multiselect(
     "Filter Professions:", df.profession.unique()
 )
-dates = df["timeStart"].map(pd.Timestamp.date)
-start_time, end_time = st.sidebar.select_slider(
-    "Filter Dates:", options=dates, value=[dates.min(), dates.max()]
+dates = df["timeStart"].unique()
+format = "%d.%m. %H:%M"
+start_time_min = st.sidebar.select_slider(
+    "First + Last Date:",
+    format_func=lambda t: pd.Timestamp(t).strftime(format),
+    options=dates,
+    value=dates.min(),
+)
+start_time_max = st.sidebar.select_slider(
+    "hidden",
+    label_visibility="collapsed",
+    format_func=lambda t: pd.Timestamp(t).strftime(format),
+    options=dates,
+    value=dates.max(),
+)
+if start_time_min > start_time_max:
+    st.sidebar.error("First Date must be before Last Date")
+    st.stop()
+
+format = "%d.%m.%y %H:%M"
+time_range_string = (
+    "("
+    + pd.Timestamp(start_time_min).strftime(format)
+    + " - "
+    + pd.Timestamp(start_time_max).strftime(format)
+    + ")"
 )
 
+
 # apply filters
-df = df[(dates >= start_time) & (dates <= end_time)]
+df = df[df["timeStart"].between(start_time_min, start_time_max)]
 if character_name_filter:
     df = df[df["name"].isin(character_name_filter)]
 if account_name_filter:
@@ -98,7 +122,11 @@ for group in sorted_keys.index:
             y=groups.get_group(group)[stat_selector],
         )
     )
-fig.update_layout(title=stat_selector, title_x=0.5, legend_traceorder="reversed")
+fig.update_layout(
+    title=f"{stat_selector}  {time_range_string}",
+    title_x=0.5,
+    legend_traceorder="reversed",
+)
 st.write(fig)
 
 # rolling average
