@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from color_lib import spec_color_map
 
@@ -75,6 +76,7 @@ _DROP_KEYS = [
     "connectedDamageCount",  # -> unclear
     "connectedDirectDamageCount",  # -> unclear
     "critableDirectDamageCount",  # -> unclear
+    "stackDist",  # ->  XXX was NaN sometimes, see below
 ]
 
 # Values that need to be divided by the active time (how long the player actually participated)
@@ -145,7 +147,9 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # skillCastUptime does not exist in older versions
     # Also some of the values in skillCastUptime are clearly wrong
     df["distToCom"] = df["distToCom"].clip(-5, 2500)
-    df["stackDist"] = df["stackDist"].clip(-5, 2500)
+    # XXX stackDist is sometimes NaN? Check again in the future...
+    #if df["stackDist"].dtype != np.float64:
+    #    df["stackDist"] = df["stackDist"].clip(-5, 2500)
     if "skillCastUptime" in df:
         df["skillCastUptime"] = df["skillCastUptime"].clip(-5, 105)
     if "skillCastUptimeNoAA" in df:
