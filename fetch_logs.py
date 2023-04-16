@@ -19,10 +19,10 @@ def fetch_log_list(userToken: str):
     response = requests.get(f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
     json = response.json()
-    pages = json["pages"]
+    max_pages = json["pages"]
     uploads = json["uploads"]
-    for page in range(pages - 1, pages - 4, -1):
-        if page < 1:
+    for page in range(0, 5):
+        if page > max_pages:
             break
         response = requests.get(
             f"https://dps.report/getUploads?userToken={userToken}&page={page+1}"
