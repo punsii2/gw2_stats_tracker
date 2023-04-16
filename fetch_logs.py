@@ -7,14 +7,14 @@ import streamlit as st
 from process_logs import filter_log_data, transform_log
 
 
-@st.experimental_memo(max_entries=1000)
+@st.cache_data(max_entries=1000)
 def _fetch_log_data(log_id: str):
     data_response = requests.get(f"https://dps.report/getJson?id={log_id}")
     data_response.raise_for_status()
     return transform_log(filter_log_data(data_response.json()), log_id)
 
 
-@st.experimental_memo(ttl=120)
+@st.cache_data(ttl=120)
 def fetch_log_list(userToken: str):
     response = requests.get(f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
@@ -32,7 +32,7 @@ def fetch_log_list(userToken: str):
     return uploads
 
 
-# @st.experimental_memo(max_entries=3)
+# @st.cache_data(max_entries=3)
 def fetch_logs(log_list):
     progress_bar = st.progress(0)
     log_data_list = pd.DataFrame()
