@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import fetch_log_list, fetch_logs
+from process_logs import _HIDE_KEYS
 
 
 def fetch_data(userToken: str):
@@ -22,8 +23,23 @@ if "DPS_REPORT_TOKENS" in os.environ:
 
 
 # fetch data
+token_help = """
+# PROTECT YOUR USER TOKEN! Treat it like a password.
+Anyone with access to this value can look up any logs uploaded with it.
+
+If you select 'Custom', you will be able to use your own userToken.
+If other values can be selected they were added by the person hosting this application.
+Talk to them if you want to know their values.
+
+ArcDps logs that were uploaded with the selected userToken will be displayed here.
+In order to upload logs with the correct userToken you can use the [PlenBotLogUploader](https://plenbot.net/uploader/) (recommended)
+or the [Arcdps-Uploader Extension](https://github.com/nbarrios/arcdps-uploader) (less well maintained).
+
+See the relevant documentation [here](https://dps.report/api).
+"""
+
 userToken = None
-userTokenName = st.sidebar.selectbox("dps.report userToken:", options=userTokens.keys())
+userTokenName = st.sidebar.selectbox("dps.report userToken:", options=userTokens.keys(), help=token_help)
 if userTokenName == "Custom":
     userToken = st.sidebar.text_input("custom token", label_visibility="collapsed")
 else:
@@ -48,8 +64,18 @@ unselectable_stats = [
     "hasCommanderTag",
     "activeTimes",
 ]
+
+
+hidden_stats_help = """
+Most values reported by ArcDps are either useless or it is unclear what the
+mean. Deselect this checkbox if you want to browse through them anyway.
+"""
+hidden_stats = unselectable_stats
+if st.sidebar.checkbox("Hide obscure stats", True, help=hidden_stats_help):
+    hidden_stats += _HIDE_KEYS
 stat_selector = st.sidebar.selectbox(
-    "Select Stats", [stat for stat in stats if stat not in unselectable_stats]
+    "Select Stats", [stat for stat in stats if stat not in hidden_stats],
+    help="Choose the data that you are interested in."
 )
 
 group_by_selection = st.sidebar.selectbox(
@@ -145,7 +171,15 @@ fig.update_layout(
 st.write(fig)
 
 # rolling average
-rolling_average_window = st.slider("Rolling Avgerage Window Size:", 1, 25, 5)
+rolling_average_help = """
+The plot below shows how the selected metric has changed over time.
+This slider causes the data to be averaged over N fights instead of
+displaying each data point individually. Choose higher values for
+metrics that vary wildly from fight to fight.
+"""
+rolling_average_window = st.slider("Rolling Avgerage Window Size:", 1, 25, 5,
+        help=rolling_average_help
+)
 df["rolling_average"] = (
     df.groupby(group_by)[stat_selector]
     .rolling(rolling_average_window)

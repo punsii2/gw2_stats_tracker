@@ -56,8 +56,29 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
+# These are keys that someone might be intetested in, but which just clutter the
+# application most of the time.
+_HIDE_KEYS = [
+    "condiDps",  # --> 'dps' should be enough
+    "powerDps",  # --> 'dps' should be enough
+    "resurrects",  # --> unclear what it means
+    "resurrectTime",  # --> unclear what it means
+    "condiCleanseSelf",  # --> not interesting in group fights
+    "wasted",  # --> unclear what it means
+    "timeWasted",  # --> unclear what it means
+    "saved",  # --> unclear what it means
+    "timeSaved",  # --> unclear what it means
+    "avgActiveBoons",  # --> 'avgBoons' should be enough
+    "avgActiveConditions",  # --> 'avgConditions' should be enough
+    "skillCastUptimeNoAA",  # --> 'skillCastUptime' should be enough
+    "totalDamageCount",  # --> 'dps' should be enough
+    # "criticalRate", # --> might be hidden when boon / fury uptime is added
+    "flankingRate",  # --> very niche
+    "againstMovingRate",  # --> very niche
+]
+
 # These are keys where i dont see a scenario in which they would
-# contain information that another key would not also contain.
+# contain relevant information that another key would not also contain.
 _DROP_KEYS = [
     "damage",  # -> dps
     "condiDamage",  # -> condiDps
@@ -73,9 +94,14 @@ _DROP_KEYS = [
     "condiCleanseTime",  # -> condiCleanse
     "condiCleanseTimeSelf",  # -> ...
     "boonStripsTime",  # -> ...
-    "connectedDamageCount",  # -> unclear
-    "connectedDirectDamageCount",  # -> unclear
-    "critableDirectDamageCount",  # -> unclear
+    "totalDmg",  # --> 'dps' should be enough
+    "directDamageCount",  # --> totalDmgCount
+    "directDmg",  # --> just use dps
+    "connectedDamageCount",  # -> totalDmgCount
+    "connectedDmg",  # --> just use dps
+    "connectedDirectDamageCount",  # -> totalDmgCount
+    "connectedDirectDmg",  # --> just use dps
+    "critableDirectDamageCount",  # -> totalDmgCount
     "stackDist",  # ->  XXX was NaN sometimes, see below
 ]
 
@@ -92,7 +118,6 @@ _DIVIDE_BY_TIME_KEYS = [
     "timeSaved",
     "swapCount",
     "totalDamageCount",
-    "directDamageCount",
     "criticalDmg",
     "missed",
     "evaded",
@@ -137,7 +162,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         df = df.drop(columns="extBarrierStats")
 
     # filter useless columns
-    df = df.drop(columns=_DROP_KEYS)
+    df = df.drop(columns=_DROP_KEYS, errors="ignore")
 
     # add some helper columns
     df["spec_color"] = df["profession"].apply(lambda spec: spec_color_map[spec])
@@ -148,7 +173,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # Also some of the values in skillCastUptime are clearly wrong
     df["distToCom"] = df["distToCom"].clip(-5, 2500)
     # XXX stackDist is sometimes NaN? Check again in the future...
-    #if df["stackDist"].dtype != np.float64:
+    # if df["stackDist"].dtype != np.float64:
     #    df["stackDist"] = df["stackDist"].clip(-5, 2500)
     if "skillCastUptime" in df:
         df["skillCastUptime"] = df["skillCastUptime"].clip(-5, 105)
