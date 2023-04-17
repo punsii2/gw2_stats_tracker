@@ -139,7 +139,7 @@ if st.checkbox("Show raw data"):
 
 
 groups = df.groupby(group_by)
-mean = groups.mean()
+mean = groups.mean(numeric_only=True)
 if st.checkbox("Show averaged data"):
     f"df (filtered) {mean.shape}:", mean
 
