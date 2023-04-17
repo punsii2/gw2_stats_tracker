@@ -126,6 +126,7 @@ _DIVIDE_BY_TIME_KEYS = [
     "invulned",
     "killed",
     "downed",
+    "downContribution",
 ]
 
 
@@ -148,12 +149,12 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     for column in ["dpsAll", "support", "statsAll"]:
         df = explode_apply(df, column)
     if "extHealingStats" in df.columns:
-        df["healing"] = df["extHealingStats"].apply(
-            lambda x: x["outgoingHealing"][0]["hps"]
-        )
         df["downedHealing"] = df["extHealingStats"].apply(
             lambda x: x["outgoingHealing"][0]["downedHps"]
         )
+        df["healing"] = df["extHealingStats"].apply(
+            lambda x: x["outgoingHealing"][0]["hps"]
+        ) - df["downedHealing"]
         df = df.drop(columns="extHealingStats")
     if "extBarrierStats" in df.columns:
         df["barrier"] = df["extBarrierStats"].apply(
@@ -183,10 +184,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # absolute values are way less accurate than values per second, so transform some of them
     df["activeTimes"] = df["activeTimes"].apply(lambda x: x[0] / 1000)
     for key in _DIVIDE_BY_TIME_KEYS:
-        # special treatment for skillCastUptime again... XXX: remove if no longer needed
-        if (key in ["skillCastUptime", "skillCastUptimeNoAA"]) and (
-            "skillCastUptime" not in df or "skillCastUptimeNoAA" not in df
-        ):
+        if (key  not in df):
             continue
         df[key] = df[key] / df["activeTimes"]
 
