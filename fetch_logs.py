@@ -21,7 +21,7 @@ def fetch_log_list(userToken: str):
     json = response.json()
     max_pages = json["pages"]
     uploads = json["uploads"]
-    for page in range(0, 5):
+    for page in range(1, 5):
         if page > max_pages:
             break
         response = requests.get(
@@ -29,7 +29,7 @@ def fetch_log_list(userToken: str):
         )
         response.raise_for_status()
         uploads.extend(response.json()["uploads"])
-    return uploads
+    return [upload['id'] for upload in uploads]
 
 
 # @st.cache_data(max_entries=3)
@@ -37,9 +37,9 @@ def fetch_logs(log_list):
     progress_bar = st.progress(0)
     log_data_list = pd.DataFrame()
     num_logs = len(log_list)
-    for idx, log_metadata in enumerate(log_list):
-        progress_bar.progress(idx / num_logs)
-        log_data_list = pd.concat([log_data_list, _fetch_log_data(log_metadata["id"])])
+    for index, log_id in enumerate(log_list):
+        progress_bar.progress(index / num_logs)
+        log_data_list = pd.concat([log_data_list, _fetch_log_data(log_id)])
 
     # XXX streamlit caching does not work with multiple threads...
     # import threading
