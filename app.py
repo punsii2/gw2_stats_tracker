@@ -5,7 +5,28 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import fetch_log_list, fetch_logs
-from process_logs import _HIDE_KEYS
+from process_logs import _RENAME_KEYS
+
+# These are keys that someone might be intetested in, but which just clutter the
+# application most of the time.
+_HIDE_KEYS = [
+    _RENAME_KEYS["condiDps"],  # --> 'dps' should be enough
+    _RENAME_KEYS["powerDps"],  # --> 'dps' should be enough
+    _RENAME_KEYS["resurrects"],  # --> unclear what it means
+    _RENAME_KEYS["resurrectTime"],  # --> unclear what it means
+    _RENAME_KEYS["condiCleanseSelf"],  # --> not interesting in group fights
+    _RENAME_KEYS["wasted"],  # --> unclear what it means
+    _RENAME_KEYS["timeWasted"],  # --> unclear what it means
+    _RENAME_KEYS["saved"],  # --> unclear what it means
+    _RENAME_KEYS["timeSaved"],  # --> unclear what it means
+    _RENAME_KEYS["avgActiveBoons"],  # --> 'avgBoons' should be enough
+    _RENAME_KEYS["avgActiveConditions"],  # --> 'avgConditions' should be enough
+    _RENAME_KEYS["skillCastUptimeNoAA"],  # --> 'skillCastUptime' should be enough
+    _RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough
+    # _RENAME_KEYS["criticalRate"], # --> might be hidden when boon / fury uptime is added
+    _RENAME_KEYS["flankingRate"],  # --> very niche
+    _RENAME_KEYS["againstMovingRate"],  # --> very niche
+]
 
 
 def fetch_data(userToken: str):
@@ -39,7 +60,9 @@ See the relevant documentation [here](https://dps.report/api).
 """
 
 userToken = None
-userTokenName = st.sidebar.selectbox("dps.report userToken:", options=userTokens.keys(), help=token_help)
+userTokenName = st.sidebar.selectbox(
+    "dps.report userToken:", options=userTokens.keys(), help=token_help
+)
 if userTokenName == "Custom":
     userToken = st.sidebar.text_input("custom token", label_visibility="collapsed")
 else:
@@ -74,8 +97,9 @@ hidden_stats = unselectable_stats
 if st.sidebar.checkbox("Hide obscure stats", True, help=hidden_stats_help):
     hidden_stats += _HIDE_KEYS
 stat_selector = st.sidebar.selectbox(
-    "Select Stats", [stat for stat in stats if stat not in hidden_stats],
-    help="Choose the data that you are interested in."
+    "Select Stats",
+    [stat for stat in stats if stat not in hidden_stats],
+    help="Choose the data that you are interested in.",
 )
 
 group_by_selection = st.sidebar.selectbox(
@@ -178,12 +202,12 @@ This slider causes the data to be averaged over N fights instead of
 displaying each data point individually. Choose higher values for
 metrics that vary wildly from fight to fight.
 """
-rolling_average_window = st.slider("Rolling Avgerage Window Size:", 1, 25, 5,
-        help=rolling_average_help
+rolling_average_window = st.slider(
+    "Rolling Avgerage Window Size:", 1, 25, 5, help=rolling_average_help
 )
 df["rolling_average"] = (
     df.groupby(group_by)[stat_selector]
-    .rolling(rolling_average_window, win_type='triang')
+    .rolling(rolling_average_window, win_type="triang")
     .mean()
     .reset_index(0, drop=True)
 )

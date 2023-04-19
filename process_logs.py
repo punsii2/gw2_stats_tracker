@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 from color_lib import spec_color_map
 
@@ -56,27 +55,6 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
-# These are keys that someone might be intetested in, but which just clutter the
-# application most of the time.
-_HIDE_KEYS = [
-    "condiDps",  # --> 'dps' should be enough
-    "powerDps",  # --> 'dps' should be enough
-    "resurrects",  # --> unclear what it means
-    "resurrectTime",  # --> unclear what it means
-    "condiCleanseSelf",  # --> not interesting in group fights
-    "wasted",  # --> unclear what it means
-    "timeWasted",  # --> unclear what it means
-    "saved",  # --> unclear what it means
-    "timeSaved",  # --> unclear what it means
-    "avgActiveBoons",  # --> 'avgBoons' should be enough
-    "avgActiveConditions",  # --> 'avgConditions' should be enough
-    "skillCastUptimeNoAA",  # --> 'skillCastUptime' should be enough
-    "totalDamageCount",  # --> 'dps' should be enough
-    # "criticalRate", # --> might be hidden when boon / fury uptime is added
-    "flankingRate",  # --> very niche
-    "againstMovingRate",  # --> very niche
-]
-
 # These are keys where i dont see a scenario in which they would
 # contain relevant information that another key would not also contain.
 _DROP_KEYS = [
@@ -129,6 +107,47 @@ _DIVIDE_BY_TIME_KEYS = [
     "downContribution",
 ]
 
+_RENAME_KEYS = {
+    "dps": "Damage(/s)",
+    "condiDps": "ConditionDamage(/s)",
+    "powerDps": "PowerDamage(/s)",
+    "resurrects": "Resurrects(/s)",
+    "resurrectTime": "ResurrectTime(/s)",
+    "condiCleanse": "ConditionCleanse(/s)",
+    "condiCleanseSelf": "ConditionCleanseSelf(/s)",
+    "boonStrips": "BoonStrips(/s)",
+    "wasted": "Wasted",
+    "timeWasted": "timeWasted(/s)",
+    "saved": "Saved",
+    "timeSaved": "timeSaved(/s)",
+    "distToCom": "DistanceToCommander(avg)",
+    "avgBoons": "Boons(avg)",
+    "avgActiveBoons": "ActiveBoons(avg)",
+    "avgConditions": "Conditions(avg)",
+    "avgActiveConditions": "ActiveConditions(avg)",
+    "swapCount": "WeaponSwaps(/s)",
+    "skillCastUptime": "SkillCastUptime(%)",
+    "skillCastUptimeNoAA": "SkillCastUptimeNoAutoAttack(%)",
+    "totalDamageCount": "DamageCount(/s)",
+    "criticalRate": "CriticalRate(avg)",
+    "criticalDmg": "CriticalDamage(/s)",
+    "flankingRate": "FlankingRate(avg)",
+    "againstMovingRate": "AgainsMovingRate(avg)",
+    "glanceRate": "GlanceRate(avg)",
+    "missed": "HitsMissed(/s)",
+    "evaded": "HitsEvaded(/s)",
+    "blocked": "HitsBlocked(/s)",
+    "interrupts": "Interrupts(/s)",
+    "invulned": "HitsInvulned(/s)",
+    "killed": "Kills(/s)",
+    "downed": "Downed(/s)",
+    "downContribution": "DownContributionDamage(/s)",
+    "downedHealing": "HealingToDowned(/s)",
+    "healing": "Healing(/s)",
+    "barrier": "Barrier(/s)",
+    "percentageAlive": "TimeAlive(%)",
+}
+
 
 def explode_apply(df: pd.DataFrame, column: str):
     return pd.concat(
@@ -152,9 +171,10 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         df["downedHealing"] = df["extHealingStats"].apply(
             lambda x: x["outgoingHealing"][0]["downedHps"]
         )
-        df["healing"] = df["extHealingStats"].apply(
-            lambda x: x["outgoingHealing"][0]["hps"]
-        ) - df["downedHealing"]
+        df["healing"] = (
+            df["extHealingStats"].apply(lambda x: x["outgoingHealing"][0]["hps"])
+            - df["downedHealing"]
+        )
         df = df.drop(columns="extHealingStats")
     if "extBarrierStats" in df.columns:
         df["barrier"] = df["extBarrierStats"].apply(
@@ -184,7 +204,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # absolute values are way less accurate than values per second, so transform some of them
     df["activeTimes"] = df["activeTimes"].apply(lambda x: x[0] / 1000)
     for key in _DIVIDE_BY_TIME_KEYS:
-        if (key  not in df):
+        if key not in df:
             continue
         df[key] = df[key] / df["activeTimes"]
 
@@ -199,6 +219,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     df["timeEnd"] = (pd.to_datetime(df["timeEnd"]) + pd.DateOffset(hours=6)).apply(
         lambda x: x.replace(tzinfo=None)
     )
+    df.rename(columns=_RENAME_KEYS, inplace=True)
     return df
 
 

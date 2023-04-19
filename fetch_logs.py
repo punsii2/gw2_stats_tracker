@@ -29,7 +29,7 @@ def fetch_log_list(userToken: str):
         )
         response.raise_for_status()
         uploads.extend(response.json()["uploads"])
-    return [upload['id'] for upload in uploads]
+    return [upload["id"] for upload in uploads]
 
 
 # @st.cache_data(max_entries=3)
