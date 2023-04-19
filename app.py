@@ -9,8 +9,8 @@ from process_logs import _HIDE_KEYS
 
 
 def fetch_data(userToken: str):
-    logList = fetch_log_list(userToken)
-    df = fetch_logs(logList)
+    log_list = fetch_log_list(userToken)
+    df = fetch_logs(log_list)
     return df
 
 
@@ -134,6 +134,7 @@ if account_name_filter:
 if profession_filter:
     df = df[df["profession"].isin(profession_filter)]
 
+
 if st.checkbox("Show raw data"):
     f"df (filtered) {df.shape}:", df
 
@@ -182,7 +183,7 @@ rolling_average_window = st.slider("Rolling Avgerage Window Size:", 1, 25, 5,
 )
 df["rolling_average"] = (
     df.groupby(group_by)[stat_selector]
-    .rolling(rolling_average_window)
+    .rolling(rolling_average_window, win_type='triang')
     .mean()
     .reset_index(0, drop=True)
 )
