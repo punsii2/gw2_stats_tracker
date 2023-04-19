@@ -80,6 +80,7 @@ _DROP_KEYS = [
     "connectedDirectDamageCount",  # -> totalDmgCount
     "connectedDirectDmg",  # --> just use dps
     "critableDirectDamageCount",  # -> totalDmgCount
+    "againstMovingRate",  # -> always 0
     "stackDist",  # ->  XXX was NaN sometimes, see below
 ]
 
@@ -132,7 +133,6 @@ _RENAME_KEYS = {
     "criticalRate": "CriticalRate(avg)",
     "criticalDmg": "CriticalDamage(/s)",
     "flankingRate": "FlankingRate(avg)",
-    "againstMovingRate": "AgainsMovingRate(avg)",
     "glanceRate": "GlanceRate(avg)",
     "missed": "HitsMissed(/s)",
     "evaded": "HitsEvaded(/s)",
@@ -141,7 +141,7 @@ _RENAME_KEYS = {
     "invulned": "HitsInvulned(/s)",
     "killed": "Kills(/s)",
     "downed": "Downed(/s)",
-    "downContribution": "DownContributionDamage(/s)",
+    "downContribution": "DownContribution(/s)",
     "downedHealing": "HealingToDowned(/s)",
     "healing": "Healing(/s)",
     "barrier": "Barrier(/s)",

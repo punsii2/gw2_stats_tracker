@@ -25,7 +25,21 @@ _HIDE_KEYS = [
     _RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough
     # _RENAME_KEYS["criticalRate"], # --> might be hidden when boon / fury uptime is added
     _RENAME_KEYS["flankingRate"],  # --> very niche
-    _RENAME_KEYS["againstMovingRate"],  # --> very niche
+]
+
+_UNSELECTABLE_KEYS = [
+    "id",
+    "timeStart",
+    "profession",
+    "name",
+    "profession+name",
+    "group",
+    "spec_color",
+    "timeEnd",
+    "duration",
+    "account",
+    "hasCommanderTag",
+    "activeTimes",
 ]
 
 
@@ -36,11 +50,11 @@ def fetch_data(userToken: str):
 
 
 # parse userTokens from env
-userTokens = {"Custom": ""}
+user_tokens = {"Custom": ""}
 if "DPS_REPORT_TOKENS" in os.environ:
     for token in os.environ["DPS_REPORT_TOKENS"].split(","):
         name, value = token.split(":")
-        userTokens |= {name: value.strip()}
+        user_tokens |= {name: value.strip()}
 
 
 # fetch data
@@ -59,51 +73,76 @@ or the [Arcdps-Uploader Extension](https://github.com/nbarrios/arcdps-uploader) 
 See the relevant documentation [here](https://dps.report/api).
 """
 
-userToken = None
-userTokenName = st.sidebar.selectbox(
-    "dps.report userToken:", options=userTokens.keys(), help=token_help
+
+url_params = st.experimental_get_query_params()
+
+# User Token
+user_token = None
+user_token_name_default = (
+    list(user_tokens).index(url_params["userTokenName"][0])
+    if "userTokenName" in url_params
+    else 0
 )
-if userTokenName == "Custom":
-    userToken = st.sidebar.text_input("custom token", label_visibility="collapsed")
+user_token_name = st.sidebar.selectbox(
+    "dps.report userToken:",
+    options=user_tokens.keys(),
+    index=user_token_name_default,
+    help=token_help,
+)
+if user_token_name == "Custom":
+    user_token = st.sidebar.text_input("custom token", label_visibility="collapsed")
 else:
-    userToken = userTokens[userTokenName]
-if not userToken:
+    user_token = user_tokens[user_token_name]
+if not user_token:
     st.stop()
-df = fetch_data(userToken)
+df = fetch_data(user_token)
 
-# create inputs
-stats = list(df)
-unselectable_stats = [
-    "id",
-    "timeStart",
-    "profession",
-    "name",
-    "profession+name",
-    "group",
-    "spec_color",
-    "timeEnd",
-    "duration",
-    "account",
-    "hasCommanderTag",
-    "activeTimes",
-]
-
-
-hidden_stats_help = """
-Most values reported by ArcDps are either useless or it is unclear what the
+# Metric
+metrics = list(df)
+hidden_metrics = _UNSELECTABLE_KEYS
+hide_obscure_metrics_help = """
+Most values reported by ArcDps are either useless or it is unclear what they
 mean. Deselect this checkbox if you want to browse through them anyway.
 """
-hidden_stats = unselectable_stats
-if st.sidebar.checkbox("Hide obscure stats", True, help=hidden_stats_help):
-    hidden_stats += _HIDE_KEYS
-stat_selector = st.sidebar.selectbox(
-    "Select Stats",
-    [stat for stat in stats if stat not in hidden_stats],
+hide_obscure_metrics_default = (
+    url_params["hide_obscure_metrics"][0] == "True"
+    if "hide_obscure_metrics" in url_params
+    else True
+)
+hide_obscure_metrics = st.sidebar.checkbox(
+    "Hide obscure metrics",
+    value=hide_obscure_metrics_default,
+    help=hide_obscure_metrics_help,
+)
+if hide_obscure_metrics:
+    hidden_metrics += _HIDE_KEYS
+
+metrics = [metric for metric in metrics if metric not in hidden_metrics]
+metric_default = (
+    metrics.index(url_params["metric"][0])
+    if "metric" in url_params and url_params["metric"][0] in metrics
+    else 0
+)
+metric = st.sidebar.selectbox(
+    "Select Metric",
+    options=metrics,
+    index=metric_default,
     help="Choose the data that you are interested in.",
 )
 
+# GroupBy
+group_by_options = ["character name", "character name & profession", "profession"]
+group_by_selection_default = (
+    group_by_options.index(url_params["group_by_selection"][0])
+    if "group_by_selection" in url_params
+    else 0
+)
 group_by_selection = st.sidebar.selectbox(
-    "Group by:", ["character name", "character name & profession", "profession"]
+    "Group by:",
+    options=group_by_options,
+    index=group_by_options.index(url_params["group_by_selection"][0])
+    if "group_by_selection" in url_params
+    else 0,
 )
 group_by = "profession+name"
 if group_by_selection == "character name":
@@ -112,14 +151,34 @@ elif group_by_selection == "profession":
     group_by = "profession"
 
 account_name_filter = st.sidebar.multiselect(
-    "Filter Account Names:", sorted(df.account.unique())
+    "Filter Account Names:",
+    options=sorted(df.account.unique()),
+    default=url_params["account_name_filter"]
+    if "account_name_filter" in url_params
+    else None,
 )
+if account_name_filter:
+    df = df[df["account"].isin(account_name_filter)]
 character_name_filter = st.sidebar.multiselect(
-    "Filter Character Names:", sorted(df.name.unique())
+    "Filter Character Names:",
+    options=sorted(df.name.unique()),
+    default=url_params["character_name_filter"]
+    if "character_name_filter" in url_params
+    else None,
 )
+if character_name_filter:
+    df = df[df["name"].isin(character_name_filter)]
 profession_filter = st.sidebar.multiselect(
-    "Filter Professions:", sorted(df.profession.unique())
+    "Filter Professions:",
+    options=sorted(df.profession.unique()),
+    default=url_params["profession_filter"]
+    if "profession_filter" in url_params
+    else None,
 )
+if profession_filter:
+    df = df[df["profession"].isin(profession_filter)]
+
+# Filter By Time
 dates = df["timeStart"].unique()
 format = "%d.%m. %H:%M"
 start_time_min = st.sidebar.select_slider(
@@ -138,6 +197,19 @@ start_time_max = st.sidebar.select_slider(
 if start_time_min > start_time_max:
     st.sidebar.error("First Date must be before Last Date")
     st.stop()
+df = df[df["timeStart"].between(start_time_min, start_time_max)]
+
+st.experimental_set_query_params(
+    userTokenName=user_token_name,
+    hide_obscure_metrics=hide_obscure_metrics,
+    metric=metric,
+    group_by_selection=group_by_selection,
+    account_name_filter=account_name_filter,
+    character_name_filter=character_name_filter,
+    profession_filter=profession_filter,
+    # start_time_min=start_time_min,
+    # start_time_max=start_time_max,
+)
 
 format = "%d.%m.%y %H:%M"
 time_range_string = (
@@ -147,16 +219,6 @@ time_range_string = (
     + pd.Timestamp(start_time_max).strftime(format)
     + ")"
 )
-
-
-# apply filters
-df = df[df["timeStart"].between(start_time_min, start_time_max)]
-if character_name_filter:
-    df = df[df["name"].isin(character_name_filter)]
-if account_name_filter:
-    df = df[df["account"].isin(account_name_filter)]
-if profession_filter:
-    df = df[df["profession"].isin(profession_filter)]
 
 
 if st.checkbox("Show raw data"):
@@ -171,7 +233,7 @@ if st.checkbox("Show averaged data"):
 
 # violoin plot
 fig = go.Figure()
-sorted_keys = mean[stat_selector].sort_values()
+sorted_keys = mean[metric].sort_values()
 for group in sorted_keys.index:
     marker = {
         "color": groups.get_group(group)["spec_color"].value_counts().idxmax(),
@@ -185,11 +247,11 @@ for group in sorted_keys.index:
             pointpos=0,
             points="all",
             spanmode="hard",
-            y=groups.get_group(group)[stat_selector],
+            y=groups.get_group(group)[metric],
         )
     )
 fig.update_layout(
-    title=f"{stat_selector}  {time_range_string}",
+    title=f"{metric}  {time_range_string}",
     title_x=0.5,
     legend_traceorder="reversed",
 )
@@ -206,7 +268,7 @@ rolling_average_window = st.slider(
     "Rolling Avgerage Window Size:", 1, 25, 5, help=rolling_average_help
 )
 df["rolling_average"] = (
-    df.groupby(group_by)[stat_selector]
+    df.groupby(group_by)[metric]
     .rolling(rolling_average_window, win_type="triang")
     .mean()
     .reset_index(0, drop=True)
@@ -223,6 +285,6 @@ for group in sorted_keys.index:
             y=groups.get_group(group)["rolling_average"],
         )
     )
-fig.update_layout(title=stat_selector, title_x=0.5, legend_traceorder="reversed")
+fig.update_layout(title=metric, title_x=0.5, legend_traceorder="reversed")
 fig.layout = {"xaxis": {"type": "category", "categoryorder": "category ascending"}}
 st.write(fig)
