@@ -88,13 +88,13 @@ elif group_by_selection == "profession":
     group_by = "profession"
 
 account_name_filter = st.sidebar.multiselect(
-    "Filter Account Names:", df.account.unique()
+    "Filter Account Names:", sorted(df.account.unique())
 )
 character_name_filter = st.sidebar.multiselect(
-    "Filter Character Names:", df.name.unique()
+    "Filter Character Names:", sorted(df.name.unique())
 )
 profession_filter = st.sidebar.multiselect(
-    "Filter Professions:", df.profession.unique()
+    "Filter Professions:", sorted(df.profession.unique())
 )
 dates = df["timeStart"].unique()
 format = "%d.%m. %H:%M"
