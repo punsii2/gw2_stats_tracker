@@ -1,3 +1,4 @@
+from os import write
 import sys
 
 import pandas as pd
@@ -11,6 +12,12 @@ from process_logs import filter_log_data, transform_log
 def _fetch_log_data(log_id: str):
     data_response = requests.get(f"https://dps.report/getJson?id={log_id}")
     data_response.raise_for_status()
+    d = data_response.json()["players"][0]
+    for k in d.keys():
+        st.write(k)
+        # st.write(type(d[k]))
+    st.write(d["groupBuffsActive"])
+    st.write(d["groupBuffs"])
     return transform_log(filter_log_data(data_response.json()), log_id)
 
 
@@ -66,5 +73,12 @@ def fetch_logs(log_list):
 
 
 if __name__ == "__main__":
-    log_list = fetch_log_list(sys.argv[1])
-    print(fetch_logs(log_list)["extHealingStats"][20]["outgoingHealing"][0]["hps"])
+    # log_list = [fetch_log_list(sys.argv[1])[0]]
+    log_id = fetch_log_list(sys.argv[1])[0]
+    data_response = requests.get(f"https://dps.report/getJson?id={log_id}")
+    data_response.raise_for_status()
+    d = data_response.json()
+    import json
+
+    with open("data.json", "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=4)

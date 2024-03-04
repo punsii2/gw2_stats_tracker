@@ -36,6 +36,21 @@ _RELEVANT_KEYS_DATA = [
     "timeEnd",
     "duration",
     "players",
+    # "buffMap",
+    #  IDs:
+    # 719 -> Switftness
+    # 10269 -> Stealth
+    # 725 -> Fury
+    # 1122 -> Stability
+    # 873 -> Resolution
+    # 1187 -> Quickenss
+    # 717 -> Protection
+    # 743 -> Aegis
+    # 718 -> Regeneration
+    # 10332 -> ChaosAura
+    # 740 -> Might
+    # 726 -> Vigor
+    # 26980 -> Resistance
 ]
 
 _RELEVANT_KEYS_DATA_PLAYERS = [
@@ -44,7 +59,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "hasCommanderTag",
     "profession",
     "support",
-    # "squadBuffsActive", XXX TBD complicated since buff ids have to be mapped to names
+    # "groupBuffsActive", XXX TBD complicated since buff ids have to be mapped to names
     "activeTimes",
     "extHealingStats",
     "extBarrierStats",
@@ -75,6 +90,10 @@ _DROP_KEYS = [
     "totalDmg",  # --> 'dps' should be enough
     "directDamageCount",  # --> totalDmgCount
     "directDmg",  # --> just use dps
+    "connectedConditionCount",  # -> litterally no one cares
+    "connectedConditionAbove90HPCount",  # -> ...
+    "connectedPowerCount",  # -> totalDmgCount
+    "connectedPowerAbove90HPCount",  # -> maybe someday if i feel like it
     "connectedDamageCount",  # -> totalDmgCount
     "connectedDmg",  # --> just use dps
     "connectedDirectDamageCount",  # -> totalDmgCount

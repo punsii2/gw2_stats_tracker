@@ -44,7 +44,8 @@ _UNSELECTABLE_KEYS = [
 
 
 def fetch_data(userToken: str):
-    log_list = fetch_log_list(userToken)
+    log_list = [fetch_log_list(userToken)[0]]
+    st.write(log_list)
     df = fetch_logs(log_list)
     return df
 
