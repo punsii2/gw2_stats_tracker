@@ -66,5 +66,12 @@ def fetch_logs(log_list):
 
 
 if __name__ == "__main__":
-    log_list = fetch_log_list(sys.argv[1])
-    print(fetch_logs(log_list)["extHealingStats"][20]["outgoingHealing"][0]["hps"])
+    # log_list = [fetch_log_list(sys.argv[1])[0]]
+    log_id = fetch_log_list(sys.argv[1])[0]
+    data_response = requests.get(f"https://dps.report/getJson?id={log_id}")
+    data_response.raise_for_status()
+    d = data_response.json()
+    import json
+
+    with open("data.json", "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=4)
