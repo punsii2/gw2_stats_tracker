@@ -39,7 +39,11 @@ def fetch_logs(log_list):
     num_logs = len(log_list)
     for index, log_id in enumerate(log_list):
         progress_bar.progress(index / num_logs)
-        log_data_list = pd.concat([log_data_list, _fetch_log_data(log_id)])
+        try:
+            log_data = _fetch_log_data((log_id))
+        except Exception:
+            continue
+        log_data_list = pd.concat([log_data_list, log_data])
 
     # XXX streamlit caching does not work with multiple threads...
     # import threading
