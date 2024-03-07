@@ -14,7 +14,7 @@ def _fetch_log_data(log_id: str):
     return transform_log(filter_log_data(data_response.json()), log_id)
 
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=600)
 def fetch_log_list(userToken: str):
     response = requests.get(f"https://dps.report/getUploads?userToken={userToken}")
     response.raise_for_status()
