@@ -1,3 +1,5 @@
+from typing import List
+
 import pandas as pd
 
 from color_lib import spec_color_map
@@ -44,7 +46,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "hasCommanderTag",
     "profession",
     "support",
-    # "squadBuffsActive", XXX TBD complicated since buff ids have to be mapped to names
+    "groupBuffsActive",
     "activeTimes",
     "extHealingStats",
     "extBarrierStats",
@@ -54,6 +56,26 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "statsAll",
     # "outgoingHealing" XXX does not show up anymore?
 ]
+
+_BOON_TABLE = {
+    717: "Boon:Protection",
+    718: "Boon:Regeneration",
+    719: "Boon:Switftness",
+    725: "Boon:Fury",
+    726: "Boon:Vigor",
+    740: "Boon:Might",
+    743: "Boon:Aegis",
+    873: "Boon:Resolution",
+    1122: "Boon:Stability",
+    1187: "Boon:Quickness",
+    5974: "Boon:Superspeed",
+    10332: "Boon:ChaosAura",
+    26980: "Boon:Resistance",
+    30328: "Boon:Alacrity",
+    46587: "Boon:Malnourished",
+    46668: "Boon:Diminished",
+    # 10269 / 13017 -> Stealth
+}
 
 # These are keys where i dont see a scenario in which they would
 # contain relevant information that another key would not also contain.
@@ -171,6 +193,40 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # create a separate column for each stat
     for column in ["dpsAll", "support", "statsAll"]:
         df = explode_apply(df, column)
+
+    # Same idea for the boons, but we have a more complicated data structure to begin with:
+    # "groupBuffsActive": [
+    #   {
+    #     "id": 1187,
+    #     "buffData": [{
+    #       "generation": 12.87,
+    #       "overstack": 12.87,
+    #       "wasterd": 0.0,
+    #       ...
+    #      }]
+    #   },
+    #   {....}
+    # ]
+    EMPTY_BOON_MAP = {k: 0 for k in _BOON_TABLE.keys()}
+    df = pd.concat(
+        [
+            df.drop(columns=["groupBuffsActive"]),
+            df["groupBuffsActive"]
+            .map(
+                lambda cell_value: EMPTY_BOON_MAP
+                if not isinstance(cell_value, List)
+                else EMPTY_BOON_MAP
+                | {
+                    e["id"]: e["buffData"][0]["generation"]
+                    for e in cell_value
+                    if e["id"] in _BOON_TABLE.keys()
+                }
+            )
+            .apply(pd.Series),
+        ],
+        axis=1,
+    )
+
     if "extHealingStats" in df.columns:
         df["downedHealing"] = df["extHealingStats"].apply(
             lambda x: x["outgoingHealing"][0]["downedHps"]
@@ -223,7 +279,10 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     df["timeEnd"] = (pd.to_datetime(df["timeEnd"]) + pd.DateOffset(hours=6)).apply(
         lambda x: x.replace(tzinfo=None)
     )
+
+    # rename for better UX
     df.rename(columns=_RENAME_KEYS, inplace=True)
+    df.rename(columns=_BOON_TABLE, inplace=True)
     return df
 
 
