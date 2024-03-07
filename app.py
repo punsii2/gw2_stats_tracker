@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import fetch_log_list, fetch_logs
-from process_logs import _RENAME_KEYS
+from process_logs import _BOON_KEY_TABLE, _RENAME_KEYS
 
 # These are keys that someone might be intetested in, but which just clutter the
 # application most of the time.
@@ -27,6 +27,21 @@ _HIDE_KEYS = [
     _RENAME_KEYS["flankingRate"],  # --> very niche
     _RENAME_KEYS["againstMovingRate"],  # --> very niche
 ]
+_UNSELECTABLE_KEYS = [
+    "id",
+    "timeStart",
+    "profession",
+    "name",
+    "profession+name",
+    "group",
+    "spec_color",
+    "timeEnd",
+    "duration",
+    "account",
+    "hasCommanderTag",
+    "activeTimes",
+]
+_BOON_KEYS = _BOON_KEY_TABLE.values()
 
 
 def fetch_data(userToken: str):
@@ -66,38 +81,59 @@ if userTokenName == "Custom":
     userToken = st.sidebar.text_input("custom token", label_visibility="collapsed")
 else:
     userToken = userTokens[userTokenName]
+
+stat_category_help = """
+Select which stats you are interested in:
+
+Default:
+  Stats that are usually helpfull.
+
+Boons:
+  Boon generation.
+
+Miscellaneous:
+  Most values reported by ArcDps are either useless or it is unclear what they
+  mean. Select this category if you want to browse through them anyway.
+
+All:
+  All of the above.
+"""
+STAT_CATEGORIES = ["Default", "Boons", "Miscellaneous", "All"]
+stat_category = st.sidebar.selectbox(
+    "Stat selection:", options=STAT_CATEGORIES, help=stat_category_help
+)
+
 if not userToken:
     st.stop()
 df = fetch_data(userToken)
 
 # create inputs
-stats = list(df)
-unselectable_stats = [
-    "id",
-    "timeStart",
-    "profession",
-    "name",
-    "profession+name",
-    "group",
-    "spec_color",
-    "timeEnd",
-    "duration",
-    "account",
-    "hasCommanderTag",
-    "activeTimes",
+all_stats = list(df)
+
+default_keys = [
+    stat
+    for stat in all_stats
+    if stat not in _UNSELECTABLE_KEYS
+    and stat not in _HIDE_KEYS
+    and stat not in _BOON_KEYS
 ]
 
+key_selection = []
+match stat_category:
+    case "Default":
+        key_selection += default_keys
+    case "Boons":
+        key_selection += _BOON_KEYS
+    case "Miscellaneous":
+        key_selection += _HIDE_KEYS
+    case "All":
+        key_selection += default_keys
+        key_selection += _BOON_KEYS
+        key_selection += _HIDE_KEYS
 
-hidden_stats_help = """
-Most values reported by ArcDps are either useless or it is unclear what the
-mean. Deselect this checkbox if you want to browse through them anyway.
-"""
-hidden_stats = unselectable_stats
-if st.sidebar.checkbox("Hide obscure stats", True, help=hidden_stats_help):
-    hidden_stats += _HIDE_KEYS
 stat_selector = st.sidebar.selectbox(
     "Select Stats",
-    [stat for stat in stats if stat not in hidden_stats],
+    key_selection,
     help="Choose the data that you are interested in.",
 )
 

@@ -57,23 +57,23 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
-_BOON_TABLE = {
-    717: "Boon:Protection",
-    718: "Boon:Regeneration",
-    719: "Boon:Switftness",
-    725: "Boon:Fury",
-    726: "Boon:Vigor",
-    740: "Boon:Might",
-    743: "Boon:Aegis",
-    873: "Boon:Resolution",
-    1122: "Boon:Stability",
-    1187: "Boon:Quickness",
-    5974: "Boon:Superspeed",
-    10332: "Boon:ChaosAura",
-    26980: "Boon:Resistance",
-    30328: "Boon:Alacrity",
-    46587: "Boon:Malnourished",
-    46668: "Boon:Diminished",
+_BOON_KEY_TABLE = {
+    717: "Protection",
+    718: "Regeneration",
+    719: "Switftness",
+    725: "Fury",
+    726: "Vigor",
+    740: "Might",
+    743: "Aegis",
+    873: "Resolution",
+    1122: "Stability",
+    1187: "Quickness",
+    5974: "Superspeed",
+    10332: "ChaosAura",
+    26980: "Resistance",
+    30328: "Alacrity",
+    # 46587: "Malnourished",
+    # 46668: "Diminished",
     # 10269 / 13017 -> Stealth
 }
 
@@ -207,7 +207,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     #   },
     #   {....}
     # ]
-    EMPTY_BOON_MAP = {k: 0 for k in _BOON_TABLE.keys()}
+    EMPTY_BOON_MAP = {k: 0 for k in _BOON_KEY_TABLE.keys()}
     df = pd.concat(
         [
             df.drop(columns=["groupBuffsActive"]),
@@ -219,7 +219,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
                 | {
                     e["id"]: e["buffData"][0]["generation"]
                     for e in cell_value
-                    if e["id"] in _BOON_TABLE.keys()
+                    if e["id"] in _BOON_KEY_TABLE.keys()
                 }
             )
             .apply(pd.Series),
@@ -282,7 +282,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
 
     # rename for better UX
     df.rename(columns=_RENAME_KEYS, inplace=True)
-    df.rename(columns=_BOON_TABLE, inplace=True)
+    df.rename(columns=_BOON_KEY_TABLE, inplace=True)
     return df
 
 
