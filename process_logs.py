@@ -75,6 +75,10 @@ _DROP_KEYS = [
     "totalDmg",  # --> 'dps' should be enough
     "directDamageCount",  # --> totalDmgCount
     "directDmg",  # --> just use dps
+    "connectedConditionCount",  # -> litterally no one cares
+    "connectedConditionAbove90HPCount",  # -> ...
+    "connectedPowerCount",  # -> totalDmgCount
+    "connectedPowerAbove90HPCount",  # -> maybe someday if i feel like it
     "connectedDamageCount",  # -> totalDmgCount
     "connectedDmg",  # --> just use dps
     "connectedDirectDamageCount",  # -> totalDmgCount
