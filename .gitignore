@@ -1,4 +1,5 @@
-.venv
-__pycache__
-.vscode
 .direnv
+.venv
+.vscode
+__pycache__
+data.json
