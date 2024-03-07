@@ -31,8 +31,7 @@ _HIDE_KEYS = [
 
 def fetch_data(userToken: str):
     log_list = fetch_log_list(userToken)
-    df = fetch_logs(log_list)
-    return df
+    return fetch_logs(log_list)
 
 
 # parse userTokens from env
