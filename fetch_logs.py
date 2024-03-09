@@ -12,12 +12,18 @@ from streamlit.runtime.scriptrunner import add_script_run_ctx
 from process_logs import filter_log_data, transform_log
 
 WORKER_COUNT = 4
+# try to find a good balance...
+# from os import sched_getaffinity
+# WORKER_COUNT = len(sched_getaffinity(0))
+# import os
+# os.write(1, f"{WORKER_COUNT=}\n".encode())
 # Measured on wifi with 8 cores/16 threads
 # 2 -> 67
 # 4 -> 62
 # 8 -> 59
 # 16 -> 57
 # 32 -> 62
+
 BASE_URL = "https://dps.report"
 
 
