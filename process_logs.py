@@ -59,26 +59,26 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
 ]
 
 _BOON_GENERATION_GROUP_KEY_TABLE = {
-    717: "Protection",
-    718: "Regeneration",
-    719: "Switftness",
-    725: "Fury",
-    726: "Vigor",
-    740: "Might",
-    743: "Aegis",
-    873: "Resolution",
-    1122: "Stability",
-    1187: "Quickness",
-    5974: "Superspeed",
-    10332: "ChaosAura",
-    26980: "Resistance",
-    30328: "Alacrity",
+    717: "Protection(groupGeneration/s)",
+    718: "Regeneration(groupGeneration/s)",
+    719: "Switftness(groupGeneration/s)",
+    725: "Fury(groupGeneration/s)",
+    726: "Vigor(groupGeneration/s)",
+    740: "Might(groupGeneration/s)",
+    743: "Aegis(groupGeneration/s)",
+    873: "Resolution(groupGeneration/s)",
+    1122: "Stability(groupGeneration/s)",
+    1187: "Quickness(groupGeneration/s)",
+    5974: "Superspeed(groupGeneration/s)",
+    10332: "ChaosAura(groupGeneration/s)",
+    26980: "Resistance(groupGeneration/s)",
+    30328: "Alacrity(groupGeneration/s)",
     # 10269 / 13017 -> Stealth
 }
 
 _BOON_UPTIME_KEY_TABLE = {
-    46587: "Malnourished",
-    46668: "Diminished",
+    46587: "Malnourished(uptime%)",
+    46668: "Diminished(uptime%)",
 }
 
 # These are keys where i dont see a scenario in which they would
@@ -291,6 +291,12 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         if key not in df:
             continue
         df[key] = df[key] / df["activeTimes"]
+    for key in list(_BOON_UPTIME_KEY_TABLE.keys()) + list(
+        _BOON_GENERATION_GROUP_KEY_TABLE.keys()
+    ):
+        df[key] = df[key] / df["activeTimes"]
+    for key in list(_BOON_UPTIME_KEY_TABLE.keys()):
+        df[key] = df[key].clip(0, 1)
 
     # add "percentage alive" as it is more understandable than "activeTimes" and fix the "duration" for that
     df["duration"] = pd.to_timedelta(df["duration"]).dt.total_seconds()
