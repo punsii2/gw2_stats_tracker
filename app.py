@@ -4,53 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from fetch_logs import fetch_log_list, fetch_logs
-from process_logs import (_BOON_GENERATION_GROUP_KEY_TABLE,
-                          _BOON_UPTIME_KEY_TABLE, _RENAME_KEYS)
-
-# These are keys that someone might be intetested in, but which just clutter the
-# application most of the time.
-_HIDE_KEYS = [
-    _RENAME_KEYS["condiDps"],  # --> 'dps' should be enough
-    _RENAME_KEYS["powerDps"],  # --> 'dps' should be enough
-    _RENAME_KEYS["resurrects"],  # --> unclear what it means
-    _RENAME_KEYS["resurrectTime"],  # --> unclear what it means
-    _RENAME_KEYS["condiCleanseSelf"],  # --> not interesting in group fights
-    _RENAME_KEYS["wasted"],  # --> unclear what it means
-    _RENAME_KEYS["timeWasted"],  # --> unclear what it means
-    _RENAME_KEYS["saved"],  # --> unclear what it means
-    _RENAME_KEYS["timeSaved"],  # --> unclear what it means
-    _RENAME_KEYS["avgActiveBoons"],  # --> 'avgBoons' should be enough
-    _RENAME_KEYS["avgActiveConditions"],  # --> 'avgConditions' should be enough
-    _RENAME_KEYS["skillCastUptimeNoAA"],  # --> 'skillCastUptime' should be enough
-    _RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough
-    # _RENAME_KEYS["criticalRate"], # --> might be hidden when boon / fury uptime is added
-    _RENAME_KEYS["flankingRate"],  # --> very niche
-    _RENAME_KEYS["againstMovingRate"],  # --> very niche
-]
-_UNSELECTABLE_KEYS = [
-    "id",
-    "timeStart",
-    "profession",
-    "name",
-    "profession+name",
-    "group",
-    "spec_color",
-    "timeEnd",
-    "duration",
-    "account",
-    "hasCommanderTag",
-    "activeTimes",
-]
-_BOON_KEYS = list(_BOON_GENERATION_GROUP_KEY_TABLE.values()) + list(
-    _BOON_UPTIME_KEY_TABLE.values()
-)
-
-
-def fetch_data(userToken: str):
-    log_list = fetch_log_list(userToken)
-    return fetch_logs(log_list)
-
+from fetch_logs import _HIDDEN_KEYS, fetch_data
 
 # parse userTokens from env
 userTokens = {"Custom": ""}
@@ -97,43 +51,16 @@ Boons:
 Miscellaneous:
   Most values reported by ArcDps are either useless or it is unclear what they
   mean. Select this category if you want to browse through them anyway.
-
-All:
-  All of the above.
 """
-STAT_CATEGORIES = ["Default", "Boons", "Miscellaneous", "All"]
+STAT_CATEGORIES = ["Default", "Boons", "Miscellaneous"]
 stat_category = st.sidebar.selectbox(
     "Stat selection:", options=STAT_CATEGORIES, help=stat_category_help
 )
 
 if not userToken:
     st.stop()
-df = fetch_data(userToken)
-
-# create inputs
-all_stats = list(df)
-
-default_keys = [
-    stat
-    for stat in all_stats
-    if stat not in _UNSELECTABLE_KEYS
-    and stat not in _HIDE_KEYS
-    and stat not in _BOON_KEYS
-]
-
-key_selection = []
-match stat_category:
-    case "Default":
-        key_selection += default_keys
-    case "Boons":
-        key_selection += _BOON_KEYS
-    case "Miscellaneous":
-        key_selection += _HIDE_KEYS
-    case "All":
-        key_selection += default_keys
-        key_selection += _BOON_KEYS
-        key_selection += _HIDE_KEYS
-
+df = fetch_data(userToken, stat_category)
+key_selection = [key for key in list(df) if key not in _HIDDEN_KEYS]
 stat_selector = st.sidebar.selectbox(
     "Select Stats",
     key_selection,

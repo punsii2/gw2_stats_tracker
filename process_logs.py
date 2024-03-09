@@ -4,9 +4,6 @@ import pandas as pd
 
 from color_lib import spec_color_map
 
-# from streamlit.runtime.scriptrunner import add_script_run_ctx #XXX caching seems to broken in multiple threads... maybe try again another time
-
-
 # logList.keys()=dict_keys([
 #   'pages'
 #   'totalUploads'
@@ -80,6 +77,9 @@ _BOON_UPTIME_KEY_TABLE = {
     46587: "Malnourished(uptime%)",
     46668: "Diminished(uptime%)",
 }
+BOON_KEYS = list(_BOON_GENERATION_GROUP_KEY_TABLE.values()) + list(
+    _BOON_UPTIME_KEY_TABLE.values()
+)
 
 # These are keys where i dont see a scenario in which they would
 # contain relevant information that another key would not also contain.
@@ -136,8 +136,15 @@ _DIVIDE_BY_TIME_KEYS = [
     "downed",
     "downContribution",
 ]
+_INTERMEDIATE_KEYS = [
+    "duration",
+    "hasCommanderTag",
+    "group",
+    "activeTimes",
+    "timeEnd",
+]
 
-_RENAME_KEYS = {
+RENAME_KEYS = {
     "dps": "Damage(/s)",
     "condiDps": "ConditionDamage(/s)",
     "powerDps": "PowerDamage(/s)",
@@ -308,8 +315,11 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
             df[key].apply(lambda t: t[:-4]), format="%Y-%m-%d %H:%M:%S"
         ) + pd.Timedelta(hours=5)
 
+    # remove keys that were only needed for calculations
+    df = df.drop(columns=_INTERMEDIATE_KEYS, errors="ignore")
+
     # rename for better UX
-    df.rename(columns=_RENAME_KEYS, inplace=True)
+    df.rename(columns=RENAME_KEYS, inplace=True)
     df.rename(columns=_BOON_GENERATION_GROUP_KEY_TABLE, inplace=True)
     df.rename(columns=_BOON_UPTIME_KEY_TABLE, inplace=True)
     return df

@@ -9,10 +9,10 @@ import streamlit as st
 from requests.adapters import HTTPAdapter, Retry
 from streamlit.runtime.scriptrunner import add_script_run_ctx
 
-from process_logs import filter_log_data, transform_log
+from process_logs import BOON_KEYS, RENAME_KEYS, filter_log_data, transform_log
 
 WORKER_COUNT = 4
-# try to find a good balance...
+# XXX try to find a good balance...
 # from os import sched_getaffinity
 # WORKER_COUNT = len(sched_getaffinity(0))
 # import os
@@ -26,8 +26,39 @@ WORKER_COUNT = 4
 
 BASE_URL = "https://dps.report"
 
+# These keys are needed but can not be selected
+_HIDDEN_KEYS = [
+    "id",
+    "timeStart",
+    "profession",
+    "name",
+    "profession+name",
+    "spec_color",
+    "account",
+]
+# These are keys that someone might be intetested in
+# but which just clutter the application most of the time.
+_MISC_KEYS = [
+    RENAME_KEYS["condiDps"],  # --> 'dps' should be enough
+    RENAME_KEYS["powerDps"],  # --> 'dps' should be enough
+    RENAME_KEYS["resurrects"],  # --> unclear what it means
+    RENAME_KEYS["resurrectTime"],  # --> unclear what it means
+    RENAME_KEYS["condiCleanseSelf"],  # --> not interesting in group fights
+    RENAME_KEYS["wasted"],  # --> unclear what it means
+    RENAME_KEYS["timeWasted"],  # --> unclear what it means
+    RENAME_KEYS["saved"],  # --> unclear what it means
+    RENAME_KEYS["timeSaved"],  # --> unclear what it means
+    RENAME_KEYS["avgActiveBoons"],  # --> 'avgBoons' should be enough
+    RENAME_KEYS["avgActiveConditions"],  # --> 'avgConditions' should be enough
+    RENAME_KEYS["skillCastUptimeNoAA"],  # --> 'skillCastUptime' should be enough
+    RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough
+    # _RENAME_KEYS["criticalRate"], # --> might be hidden when boon / fury uptime is added
+    RENAME_KEYS["flankingRate"],  # --> very niche
+    RENAME_KEYS["againstMovingRate"],  # --> very niche
+]
 
-@st.cache_data(max_entries=1000, show_spinner=False)
+
+@st.cache_data(max_entries=500, show_spinner=False)
 def _fetch_log_data(log_id: str, _session: requests.Session):
     try:
         data_response = _session.get(f"{BASE_URL}/getJson?id={log_id}")
@@ -38,7 +69,7 @@ def _fetch_log_data(log_id: str, _session: requests.Session):
 
 
 @st.cache_data(ttl=300)
-def fetch_log_list(userToken: str):
+def _fetch_log_list(userToken: str):
     response = requests.get(f"{BASE_URL}/getUploads?userToken={userToken}")
     response.raise_for_status()
     json = response.json()
@@ -70,7 +101,7 @@ def _fetch_log_worker(task_queue):
             task_queue.task_done()
 
 
-def fetch_logs(log_list):
+def _fetch_logs(log_list):
     log_count = len(log_list)
     progress_bar = st.progress(0)
 
@@ -110,9 +141,34 @@ def fetch_logs(log_list):
     return df
 
 
+@st.cache_data(max_entries=6, ttl=310)
+def fetch_data(userToken: str, stat_category: str):
+    log_list = _fetch_log_list(userToken)
+    # log_list = log_list[:10] XXX for testing
+    df = _fetch_logs(log_list)
+
+    # create inputs
+    default_keys = [
+        key
+        for key in list(df)
+        if key not in _HIDDEN_KEYS and key not in BOON_KEYS and key not in _MISC_KEYS
+    ]
+
+    result_keys = _HIDDEN_KEYS.copy()
+    match stat_category:
+        case "Default":
+            result_keys += default_keys
+        case "Boons":
+            result_keys += BOON_KEYS
+        case "Miscellaneous":
+            result_keys += _MISC_KEYS
+
+    return df[result_keys]
+
+
 if __name__ == "__main__":
     # log_list = [fetch_log_list(sys.argv[1])[0]]
-    log_id = fetch_log_list(sys.argv[1])[0]
+    log_id = _fetch_log_list(sys.argv[1])[0]
     data_response = requests.get(f"{BASE_URL}/getJson?id={log_id}")
     data_response.raise_for_status()
     d = data_response.json()
