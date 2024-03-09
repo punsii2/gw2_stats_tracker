@@ -141,13 +141,18 @@ stat_selector = st.sidebar.selectbox(
 )
 
 group_by_selection = st.sidebar.selectbox(
-    "Group by:", ["character name", "character name & profession", "profession"]
+    "Group by:",
+    ["character name", "character name & profession", "profession", "account name"],
 )
-group_by = "profession+name"
-if group_by_selection == "character name":
-    group_by = "name"
-elif group_by_selection == "profession":
-    group_by = "profession"
+match group_by_selection:
+    case "profession":
+        group_by = "profession"
+    case "character name":
+        group_by = "name"
+    case "account name":
+        group_by = "account"
+    case _:
+        group_by = "profession+name"
 
 account_name_filter = st.sidebar.multiselect(
     "Filter Account Names:", sorted(df.account.unique())
