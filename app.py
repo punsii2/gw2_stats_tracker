@@ -5,7 +5,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import fetch_log_list, fetch_logs
-from process_logs import _BOON_KEY_TABLE, _RENAME_KEYS
+from process_logs import (_BOON_GENERATION_GROUP_KEY_TABLE,
+                          _BOON_UPTIME_KEY_TABLE, _RENAME_KEYS)
 
 # These are keys that someone might be intetested in, but which just clutter the
 # application most of the time.
@@ -41,7 +42,9 @@ _UNSELECTABLE_KEYS = [
     "hasCommanderTag",
     "activeTimes",
 ]
-_BOON_KEYS = _BOON_KEY_TABLE.values()
+_BOON_KEYS = list(_BOON_GENERATION_GROUP_KEY_TABLE.values()) + list(
+    _BOON_UPTIME_KEY_TABLE.values()
+)
 
 
 def fetch_data(userToken: str):

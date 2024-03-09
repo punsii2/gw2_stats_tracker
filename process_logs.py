@@ -46,6 +46,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "hasCommanderTag",
     "profession",
     "support",
+    "buffUptimesActive",
     "groupBuffsActive",
     "activeTimes",
     "extHealingStats",
@@ -57,7 +58,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
-_BOON_KEY_TABLE = {
+_BOON_GENERATION_GROUP_KEY_TABLE = {
     717: "Protection",
     718: "Regeneration",
     719: "Switftness",
@@ -72,9 +73,12 @@ _BOON_KEY_TABLE = {
     10332: "ChaosAura",
     26980: "Resistance",
     30328: "Alacrity",
-    # 46587: "Malnourished",
-    # 46668: "Diminished",
     # 10269 / 13017 -> Stealth
+}
+
+_BOON_UPTIME_KEY_TABLE = {
+    46587: "Malnourished",
+    46668: "Diminished",
 }
 
 # These are keys where i dont see a scenario in which they would
@@ -207,7 +211,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     #   },
     #   {....}
     # ]
-    EMPTY_BOON_MAP = {k: 0 for k in _BOON_KEY_TABLE.keys()}
+    EMPTY_BOON_MAP = {k: 0 for k in _BOON_GENERATION_GROUP_KEY_TABLE.keys()}
     df = pd.concat(
         [
             df.drop(columns=["groupBuffsActive"]),
@@ -219,7 +223,27 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
                 | {
                     e["id"]: e["buffData"][0]["generation"]
                     for e in cell_value
-                    if e["id"] in _BOON_KEY_TABLE.keys()
+                    if e["id"] in _BOON_GENERATION_GROUP_KEY_TABLE.keys()
+                }
+            )
+            .apply(pd.Series),
+        ],
+        axis=1,
+    )
+
+    EMPTY_BOON_MAP = {k: 0 for k in _BOON_UPTIME_KEY_TABLE.keys()}
+    df = pd.concat(
+        [
+            df.drop(columns=["buffUptimesActive"]),
+            df["buffUptimesActive"]
+            .map(
+                lambda cell_value: EMPTY_BOON_MAP
+                if not isinstance(cell_value, List)
+                else EMPTY_BOON_MAP
+                | {
+                    e["id"]: e["buffData"][0]["uptime"]
+                    for e in cell_value
+                    if e["id"] in _BOON_UPTIME_KEY_TABLE.keys()
                 }
             )
             .apply(pd.Series),
@@ -280,7 +304,8 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
 
     # rename for better UX
     df.rename(columns=_RENAME_KEYS, inplace=True)
-    df.rename(columns=_BOON_KEY_TABLE, inplace=True)
+    df.rename(columns=_BOON_GENERATION_GROUP_KEY_TABLE, inplace=True)
+    df.rename(columns=_BOON_UPTIME_KEY_TABLE, inplace=True)
     return df
 
 
