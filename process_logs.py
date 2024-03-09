@@ -273,12 +273,10 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     df["percentageAlive"] = df["activeTimes"] / df["duration"]
 
     # fix datetime columns
-    df["timeStart"] = (pd.to_datetime(df["timeStart"]) + pd.DateOffset(hours=6)).apply(
-        lambda x: x.replace(tzinfo=None)
-    )
-    df["timeEnd"] = (pd.to_datetime(df["timeEnd"]) + pd.DateOffset(hours=6)).apply(
-        lambda x: x.replace(tzinfo=None)
-    )
+    for key in ["timeStart", "timeEnd"]:
+        df[key] = pd.to_datetime(
+            df[key].apply(lambda t: t[:-4]), format="%Y-%m-%d %H:%M:%S"
+        ) + pd.Timedelta(hours=5)
 
     # rename for better UX
     df.rename(columns=_RENAME_KEYS, inplace=True)
