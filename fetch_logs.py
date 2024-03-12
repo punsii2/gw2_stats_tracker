@@ -1,3 +1,4 @@
+import logging
 import queue
 import sys
 import threading
@@ -63,9 +64,10 @@ def _fetch_log_data(log_id: str, _session: requests.Session):
     try:
         data_response = _session.get(f"{BASE_URL}/getJson?id={log_id}")
         data_response.raise_for_status()
-        return transform_log(filter_log_data(data_response.json()), log_id)
     except Exception:
+        logging.exception(f"Could not download log {log_id}.")
         return pd.DataFrame()
+    return transform_log(filter_log_data(data_response.json()), log_id)
 
 
 @st.cache_data(ttl=300)
@@ -144,7 +146,7 @@ def _fetch_logs(log_list):
 @st.cache_data(max_entries=6, ttl=310)
 def fetch_data(userToken: str, stat_category: str):
     log_list = _fetch_log_list(userToken)
-    # log_list = log_list[:10] XXX for testing
+    # log_list = log_list[:10]  # XXX for testing
     df = _fetch_logs(log_list)
 
     # create inputs

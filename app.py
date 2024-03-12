@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pandas as pd
@@ -5,6 +6,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import _HIDDEN_KEYS, fetch_data
+
+logging.basicConfig(filename="myapp.log", level=logging.INFO)
 
 # parse userTokens from env
 userTokens = {"Custom": ""}

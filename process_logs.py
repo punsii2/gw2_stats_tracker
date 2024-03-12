@@ -249,6 +249,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         ],
         axis=1,
     )
+    df.rename(columns=_BOON_GENERATION_GROUP_KEY_TABLE, inplace=True)
 
     EMPTY_BOON_MAP = {k: 0 for k in _BOON_UPTIME_KEY_TABLE.keys()}
     df = pd.concat(
@@ -269,6 +270,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         ],
         axis=1,
     )
+    df.rename(columns=_BOON_UPTIME_KEY_TABLE, inplace=True)
 
     if "extHealingStats" in df.columns:
         df["downedHealing"] = df["extHealingStats"].apply(
@@ -310,11 +312,11 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         if key not in df:
             continue
         df[key] = df[key] / df["activeTimes"]
-    for key in list(_BOON_UPTIME_KEY_TABLE.keys()) + list(
-        _BOON_GENERATION_GROUP_KEY_TABLE.keys()
+    for key in list(_BOON_UPTIME_KEY_TABLE.values()) + list(
+        _BOON_GENERATION_GROUP_KEY_TABLE.values()
     ):
         df[key] = df[key] / df["activeTimes"]
-    for key in list(_BOON_UPTIME_KEY_TABLE.keys()):
+    for key in list(_BOON_UPTIME_KEY_TABLE.values()):
         df[key] = df[key].clip(0, 1)
 
     # add "percentage alive" as it is more understandable than "activeTimes" and fix the "duration" for that
@@ -332,8 +334,6 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
 
     # rename for better UX
     df.rename(columns=RENAME_KEYS, inplace=True)
-    df.rename(columns=_BOON_GENERATION_GROUP_KEY_TABLE, inplace=True)
-    df.rename(columns=_BOON_UPTIME_KEY_TABLE, inplace=True)
     return df
 
 
