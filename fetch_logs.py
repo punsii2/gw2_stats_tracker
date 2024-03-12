@@ -49,7 +49,6 @@ _MISC_KEYS = [
     RENAME_KEYS["timeWasted"],  # --> unclear what it means
     RENAME_KEYS["saved"],  # --> unclear what it means
     RENAME_KEYS["timeSaved"],  # --> unclear what it means
-    RENAME_KEYS["avgActiveBoons"],  # --> 'avgBoons' should be enough
     RENAME_KEYS["avgActiveConditions"],  # --> 'avgConditions' should be enough
     RENAME_KEYS["skillCastUptimeNoAA"],  # --> 'skillCastUptime' should be enough
     RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough

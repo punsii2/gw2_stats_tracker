@@ -170,7 +170,6 @@ RENAME_KEYS = {
     "saved": "Saved",
     "timeSaved": "timeSaved(/s)",
     "distToCom": "DistanceToCommander(avg)",
-    "avgBoons": "Boons(avg)",
     "avgActiveBoons": "ActiveBoons(avg)",
     "avgConditions": "Conditions(avg)",
     "avgActiveConditions": "ActiveConditions(avg)",
