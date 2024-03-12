@@ -171,7 +171,6 @@ RENAME_KEYS = {
     "timeSaved": "timeSaved(/s)",
     "distToCom": "DistanceToCommander(avg)",
     "avgActiveBoons": "ActiveBoons(avg)",
-    "avgConditions": "Conditions(avg)",
     "avgActiveConditions": "ActiveConditions(avg)",
     "swapCount": "WeaponSwaps(/s)",
     "skillCastUptime": "SkillCastUptime(%)",
