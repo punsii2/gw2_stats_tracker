@@ -283,14 +283,14 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # cleanup data
     # skillCastUptime does not exist in older versions
     # Also some of the values in skillCastUptime are clearly wrong
-    df["distToCom"] = df["distToCom"].clip(-5, 2500)
+    df["distToCom"] = df["distToCom"].clip(0, 1500)
     # XXX stackDist is sometimes NaN? Check again in the future...
     # if df["stackDist"].dtype != np.float64:
     #    df["stackDist"] = df["stackDist"].clip(-5, 2500)
     if "skillCastUptime" in df:
-        df["skillCastUptime"] = df["skillCastUptime"].clip(-5, 105)
+        df["skillCastUptime"] = df["skillCastUptime"].clip(5, 95)
     if "skillCastUptimeNoAA" in df:
-        df["skillCastUptimeNoAA"] = df["skillCastUptimeNoAA"].clip(-5, 105)
+        df["skillCastUptimeNoAA"] = df["skillCastUptimeNoAA"].clip(5, 95)
 
     # absolute values are way less accurate than values per second, so transform some of them
     df["activeTimes"] = df["activeTimes"].apply(lambda x: x[0] / 1000)
