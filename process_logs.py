@@ -74,8 +74,20 @@ _BOON_GENERATION_GROUP_KEY_TABLE = {
 }
 
 _BOON_UPTIME_KEY_TABLE = {
-    46587: "Malnourished(uptime%)",
-    46668: "Diminished(uptime%)",
+    717: "Protection(uptime%)",
+    718: "Regeneration(uptime%)",
+    719: "Switftness(uptime%)",
+    725: "Fury(uptime%)",
+    726: "Vigor(uptime%)",
+    740: "Might(uptime%)",
+    743: "Aegis(uptime%)",
+    873: "Resolution(uptime%)",
+    1122: "Stability(uptime%)",
+    1187: "Quickness(uptime%)",
+    5974: "Superspeed(uptime%)",
+    10332: "ChaosAura(uptime%)",
+    26980: "Resistance(uptime%)",
+    30328: "Alacrity(uptime%)",
 }
 BOON_KEYS = list(_BOON_GENERATION_GROUP_KEY_TABLE.values()) + list(
     _BOON_UPTIME_KEY_TABLE.values()
