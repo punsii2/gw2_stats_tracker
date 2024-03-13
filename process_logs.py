@@ -45,6 +45,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "support",
     "buffUptimesActive",
     "groupBuffsActive",
+    "consumables",
     "activeTimes",
     "extHealingStats",
     "extBarrierStats",
@@ -89,8 +90,10 @@ _BOON_UPTIME_KEY_TABLE = {
     26980: "Resistance(uptime%)",
     30328: "Alacrity(uptime%)",
 }
-BOON_KEYS = list(_BOON_GENERATION_GROUP_KEY_TABLE.values()) + list(
-    _BOON_UPTIME_KEY_TABLE.values()
+BOON_KEYS = (
+    list(_BOON_GENERATION_GROUP_KEY_TABLE.values())
+    + list(_BOON_UPTIME_KEY_TABLE.values())
+    + ["BuffoodUptime(%)"]
 )
 
 # These are keys where i dont see a scenario in which they would
@@ -211,6 +214,8 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     df = df.drop(columns=["players"])
     df = df.join(players)
 
+    df["activeTimes"] = df["activeTimes"].apply(lambda x: x[0] / 1000)
+
     # create a separate column for each stat
     for column in ["dpsAll", "support", "statsAll"]:
         df = explode_apply(df, column)
@@ -270,6 +275,31 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     )
     df.rename(columns=_BOON_UPTIME_KEY_TABLE, inplace=True)
 
+    # Reinforced armor: 9283
+    # Malnourished: 46587
+    # Diminished: 46668
+    filtered_buffs = [9283, 46587, 46668]
+    df["consumables"] = df["consumables"].map(
+        lambda cell_value: [
+            e["duration"] for e in cell_value if e["id"] not in filtered_buffs
+        ]
+        if hasattr(cell_value, "__len__")
+        else []
+    )
+    df["BuffoodUptime(%)"] = (
+        df["consumables"]
+        .map(lambda e: e[0] if len(e) > 0 else 0)
+        .div(1000)
+        .div(df["activeTimes"])
+        .clip(0, 1)
+        + df["consumables"]
+        .map(lambda e: e[1] if len(e) > 1 else 0)
+        .div(1000)
+        .div(df["activeTimes"])
+        .clip(0, 1)
+    ).div(2)
+    df = df.drop(columns=["consumables"])
+
     if "extHealingStats" in df.columns:
         df["downedHealing"] = df["extHealingStats"].apply(
             lambda x: x["outgoingHealing"][0]["downedHps"]
@@ -305,7 +335,6 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         df["skillCastUptimeNoAA"] = df["skillCastUptimeNoAA"].clip(5, 95)
 
     # absolute values are way less accurate than values per second, so transform some of them
-    df["activeTimes"] = df["activeTimes"].apply(lambda x: x[0] / 1000)
     for key in _DIVIDE_BY_TIME_KEYS:
         if key not in df:
             continue
