@@ -90,11 +90,10 @@ _BOON_UPTIME_KEY_TABLE = {
     26980: "Resistance(uptime%)",
     30328: "Alacrity(uptime%)",
 }
-BOON_KEYS = (
+BOON_KEYS = sorted(
     list(_BOON_GENERATION_GROUP_KEY_TABLE.values())
     + list(_BOON_UPTIME_KEY_TABLE.values())
-    + ["BuffoodUptime(%)"]
-)
+) + ["Bufffood(uptime%)"]
 
 # These are keys where i dont see a scenario in which they would
 # contain relevant information that another key would not also contain.
@@ -103,7 +102,12 @@ _DROP_KEYS = [
     "condiDamage",  # -> condiDps
     "powerDamage",  # -> powerDps
     "breakbarDamage",  # -> always 0
+    "avgBoons",  # -> avgActiveBoons
+    "avgConditions",  # -> avgActiveConditions
     "actorDps",  # -> almost the same as dps
+    "againstMovingRate",  # --> always 0
+    "againstDownedCount",  # -> not relevant
+    "againstDownedDamage",  # -> not relevant
     "actorDamage",  # -> ...
     "actorCondiDps",  # -> ...
     "actorCondiDamage",  # -> ...
@@ -126,6 +130,10 @@ _DROP_KEYS = [
     "connectedDirectDmg",  # --> just use dps
     "critableDirectDamageCount",  # -> totalDmgCount
     "stackDist",  # ->  XXX was NaN sometimes, see below
+    "wasted",  # -> don't know what it means
+    "saved",  # -> don't know what it means
+    "timeWasted",  # -> don't know what it means
+    "timeSaved",  # -> don't know what it means
 ]
 
 # Values that need to be divided by the active time (how long the player actually participated)
@@ -135,10 +143,6 @@ _DIVIDE_BY_TIME_KEYS = [
     "condiCleanse",
     "condiCleanseSelf",
     "boonStrips",
-    "wasted",
-    "timeWasted",
-    "saved",
-    "timeSaved",
     "swapCount",
     "totalDamageCount",
     "criticalDmg",
@@ -182,7 +186,6 @@ RENAME_KEYS = {
     "criticalRate": "CriticalRate(avg)",
     "criticalDmg": "CriticalDamage(/s)",
     "flankingRate": "FlankingRate(avg)",
-    "againstMovingRate": "AgainsMovingRate(avg)",
     "glanceRate": "GlanceRate(avg)",
     "missed": "HitsMissed(/s)",
     "evaded": "HitsEvaded(/s)",
@@ -286,7 +289,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         if hasattr(cell_value, "__len__")
         else []
     )
-    df["BuffoodUptime(%)"] = (
+    df["Bufffood(uptime%)"] = (
         df["consumables"]
         .map(lambda e: e[0] if len(e) > 0 else 0)
         .div(1000)

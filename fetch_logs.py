@@ -40,20 +40,23 @@ _HIDDEN_KEYS = [
 # These are keys that someone might be intetested in
 # but which just clutter the application most of the time.
 _MISC_KEYS = [
-    RENAME_KEYS["condiDps"],  # --> 'dps' should be enough
-    RENAME_KEYS["powerDps"],  # --> 'dps' should be enough
-    RENAME_KEYS["resurrects"],  # --> unclear what it means
-    RENAME_KEYS["resurrectTime"],  # --> unclear what it means
-    RENAME_KEYS["condiCleanseSelf"],  # --> not interesting in group fights
-    RENAME_KEYS["wasted"],  # --> unclear what it means
-    RENAME_KEYS["timeWasted"],  # --> unclear what it means
-    RENAME_KEYS["saved"],  # --> unclear what it means
-    RENAME_KEYS["timeSaved"],  # --> unclear what it means
+    RENAME_KEYS["distToCom"],
     RENAME_KEYS["skillCastUptimeNoAA"],  # --> 'skillCastUptime' should be enough
-    RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough
-    # _RENAME_KEYS["criticalRate"], # --> might be hidden when boon / fury uptime is added
+    RENAME_KEYS["swapCount"],
+    RENAME_KEYS["powerDps"],  # --> 'dps' should be enough
+    RENAME_KEYS["condiDps"],  # --> 'dps' should be enough
+    RENAME_KEYS["criticalDmg"],
+    RENAME_KEYS["criticalRate"],
+    RENAME_KEYS["glanceRate"],
     RENAME_KEYS["flankingRate"],  # --> very niche
-    RENAME_KEYS["againstMovingRate"],  # --> very niche
+    RENAME_KEYS["totalDamageCount"],  # --> 'dps' should be enough
+    RENAME_KEYS["missed"],
+    RENAME_KEYS["condiCleanseSelf"],  # --> not interesting in group fights
+    RENAME_KEYS["resurrectTime"],  # --> unclear what it means
+    RENAME_KEYS["resurrects"],  # --> unclear what it means
+    RENAME_KEYS["evaded"],
+    RENAME_KEYS["invulned"],
+    RENAME_KEYS["blocked"],
 ]
 
 
