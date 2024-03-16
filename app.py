@@ -149,18 +149,29 @@ for group in sorted_keys.index:
     marker = {
         "color": groups.get_group(group)["spec_color"].value_counts().idxmax(),
     }
-    fig.add_trace(
-        go.Violin(
-            jitter=1,
-            marker=marker,
-            meanline_visible=True,
-            name=group,
-            pointpos=0,
-            points="all",
-            spanmode="hard",
-            y=groups.get_group(group)[stat_selector],
+    if stat_selector in ["TimeAlive(%)", "Bufffood(uptime%)"]:
+        fig.add_trace(
+            go.Bar(
+                marker=marker,
+                name=group,
+                y=[sorted_keys[group]],
+                x=[group],
+            )
         )
-    )
+    else:
+        fig.add_trace(
+            go.Violin(
+                jitter=1,
+                marker=marker,
+                meanline_visible=True,
+                name=group,
+                pointpos=0,
+                points="all",
+                spanmode="hard",
+                y=groups.get_group(group)[stat_selector],
+            )
+        )
+
 fig.update_layout(
     title=f"{stat_selector}  {time_range_string}",
     title_x=0.5,
