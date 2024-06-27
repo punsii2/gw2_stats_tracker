@@ -223,6 +223,15 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     for column in ["dpsAll", "support", "statsAll"]:
         df = explode_apply(df, column)
 
+    # filter out players that did not acually participate in the fight
+    df = df[
+        (df["dps"] >= 50)
+        | (df["blocked"] >= 5)
+        | (df["evaded"] >= 5)
+        | (df["boonStrips"] >= 5)
+        | (df["condiCleanse"] >= 10)
+    ]
+
     # Same idea for the boons, but we have a more complicated data structure to begin with:
     # "groupBuffsActive": [
     #   {
