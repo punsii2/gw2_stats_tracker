@@ -242,14 +242,16 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
             df.drop(columns=["groupBuffsActive"]),
             df["groupBuffsActive"]
             .map(
-                lambda cell_value: EMPTY_BOON_MAP
-                if not isinstance(cell_value, List)
-                else EMPTY_BOON_MAP
-                | {
-                    e["id"]: e["buffData"][0]["generation"]
-                    for e in cell_value
-                    if e["id"] in _BOON_GENERATION_GROUP_KEY_TABLE.keys()
-                }
+                lambda cell_value: (
+                    EMPTY_BOON_MAP
+                    if not isinstance(cell_value, List)
+                    else EMPTY_BOON_MAP
+                    | {
+                        e["id"]: e["buffData"][0]["generation"]
+                        for e in cell_value
+                        if e["id"] in _BOON_GENERATION_GROUP_KEY_TABLE.keys()
+                    }
+                )
             )
             .apply(pd.Series),
         ],
@@ -263,14 +265,16 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
             df.drop(columns=["buffUptimesActive"]),
             df["buffUptimesActive"]
             .map(
-                lambda cell_value: EMPTY_BOON_MAP
-                if not isinstance(cell_value, List)
-                else EMPTY_BOON_MAP
-                | {
-                    e["id"]: e["buffData"][0]["uptime"]
-                    for e in cell_value
-                    if e["id"] in _BOON_UPTIME_KEY_TABLE.keys()
-                }
+                lambda cell_value: (
+                    EMPTY_BOON_MAP
+                    if not isinstance(cell_value, List)
+                    else EMPTY_BOON_MAP
+                    | {
+                        e["id"]: e["buffData"][0]["uptime"]
+                        for e in cell_value
+                        if e["id"] in _BOON_UPTIME_KEY_TABLE.keys()
+                    }
+                )
             )
             .apply(pd.Series),
         ],
@@ -283,11 +287,11 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     # Diminished: 46668
     filtered_buffs = [9283, 46587, 46668]
     df["consumables"] = df["consumables"].map(
-        lambda cell_value: [
-            e["duration"] for e in cell_value if e["id"] not in filtered_buffs
-        ]
-        if hasattr(cell_value, "__len__")
-        else []
+        lambda cell_value: (
+            [e["duration"] for e in cell_value if e["id"] not in filtered_buffs]
+            if hasattr(cell_value, "__len__")
+            else []
+        )
     )
     df["Bufffood(uptime%)"] = (
         df["consumables"]
