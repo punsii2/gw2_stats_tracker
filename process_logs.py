@@ -208,9 +208,10 @@ RENAME_KEYS = {
 
 
 def explode_apply(df: pd.DataFrame, column: str):
-    return pd.concat(
-        [df.drop(columns=[column]), df.explode(column)[column].apply(pd.Series)], axis=1
-    )
+    new_columns = df.explode(column)[column].apply(pd.Series)
+    if df.shape[0] != new_columns.shape[0]:
+        raise FightInvalidException("Multiple fights in one log detected!")
+    return pd.concat([df.drop(columns=[column]), new_columns], axis=1)
 
 
 def transform_log(log: dict, log_id: str) -> pd.DataFrame:
@@ -236,6 +237,9 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         | (df["boonStrips"] >= 5)
         | (df["condiCleanse"] >= 10)
     ]
+    if df.size == 0:
+        # No players actually participated...
+        raise FightInvalidException(f"Log {log_id} contains no active players!")
 
     # Same idea for the boons, but we have a more complicated data structure to begin with:
     # "groupBuffsActive": [
@@ -387,7 +391,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
 
 def filter_log_data(log):
     if "WvW" not in log["fightName"] and "World vs World" not in log["fightName"]:
-        raise FightInvalidException(f"Fight is not a WvW fight ({log['fightName']=})")
+        raise FightInvalidException(f"Log is not a WvW fight ({log['fightName']=})")
     for key in list(log.keys()):
         if key not in _RELEVANT_KEYS_DATA:
             del log[key]

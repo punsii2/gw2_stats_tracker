@@ -175,12 +175,19 @@ def fetch_data(userToken: str, stat_category: str):
 
 
 if __name__ == "__main__":
-    # log_list = [fetch_log_list(sys.argv[1])[0]]
-    log_id = _fetch_log_list(sys.argv[1])[0]
+    import json
+
+    user_token = sys.argv[1]
+
+    # log_list = _fetch_log_list(user_token)[11:14]
+    # for log_id in log_list:
+    #     log = requests.get(f"{BASE_URL}/getJson?id={log_id}").json()
+    #     print(transform_log(filter_log_data(log), log_id))
+
+    log_id = _fetch_log_list(user_token)[0]
     data_response = requests.get(f"{BASE_URL}/getJson?id={log_id}")
     data_response.raise_for_status()
     d = data_response.json()
-    import json
 
     with open("data.json", "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False, indent=4)
