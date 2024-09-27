@@ -10,7 +10,8 @@ import streamlit as st
 from requests.adapters import HTTPAdapter, Retry
 from streamlit.runtime.scriptrunner import add_script_run_ctx
 
-from process_logs import BOON_KEYS, RENAME_KEYS, filter_log_data, transform_log
+from process_logs import (BOON_KEYS, RENAME_KEYS, FightInvalidException,
+                          filter_log_data, transform_log)
 
 WORKER_COUNT = 4
 # XXX try to find a good balance...
@@ -68,7 +69,11 @@ def _fetch_log_data(log_id: str, _session: requests.Session):
     except Exception:
         logging.exception(f"Could not download log {log_id}.")
         return pd.DataFrame()
-    return transform_log(filter_log_data(data_response.json()), log_id)
+    try:
+        return transform_log(filter_log_data(data_response.json()), log_id)
+    except FightInvalidException as e:
+        logging.warning(e)
+        return pd.DataFrame()
 
 
 @st.cache_data(ttl=300)

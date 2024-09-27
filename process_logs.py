@@ -4,6 +4,11 @@ import pandas as pd
 
 from color_lib import spec_color_map
 
+
+class FightInvalidException(Exception):
+    pass
+
+
 # logList.keys()=dict_keys([
 #   'pages'
 #   'totalUploads'
@@ -381,6 +386,8 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
 
 
 def filter_log_data(log):
+    if "WvW" not in log["fightName"] and "World vs World" not in log["fightName"]:
+        raise FightInvalidException(f"Fight is not a WvW fight ({log['fightName']=})")
     for key in list(log.keys()):
         if key not in _RELEVANT_KEYS_DATA:
             del log[key]
