@@ -9,6 +9,7 @@
   outputs = { self, nixpkgs, treefmt-nix }:
 
     let
+      system = "x86_64-linux";
       treefmtEval = treefmt-nix.lib.evalModule pkgs
         {
           # Used to find the project root
@@ -23,17 +24,31 @@
         };
 
       pkgs = import nixpkgs {
-        system = "x86_64-linux";
+        inherit system;
       };
       pyPkgs = pythonPackages: with pythonPackages; [
         debugpy
         plotly
       ];
+
+      streamlitRun = pkgs.writeShellApplication {
+        name = "streamlitRun";
+        runtimeInputs = with pkgs; [
+          (python3.withPackages pyPkgs)
+          streamlit
+        ];
+        text = "${pkgs.streamlit}/bin/streamlit run app.py";
+      };
     in
     {
-      formatter.x86_64-linux = treefmtEval.config.build.wrapper;
+      apps.${system} = {
+        default = {
+          type = "app";
+          program = "${streamlitRun}/bin/streamlitRun";
+        };
+      };
 
-      devShells.x86_64-linux = {
+      devShells.${system} = {
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
             treefmtEval.config.build.wrapper
@@ -49,5 +64,8 @@
           ];
         };
       };
+
+      formatter.${system} = treefmtEval.config.build.wrapper;
     };
 }
+
