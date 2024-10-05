@@ -26,18 +26,18 @@
       pkgs = import nixpkgs {
         inherit system;
       };
-      pyPkgs = pythonPackages: with pythonPackages; [
-        debugpy
-        plotly
-      ];
+      pythonEnv = pkgs.python3.withPackages (
+        ps: with ps; [
+          debugpy
+          plotly
+          streamlit
+        ]
+      );
 
       streamlitRun = pkgs.writeShellApplication {
         name = "streamlitRun";
-        runtimeInputs = with pkgs; [
-          (python3.withPackages pyPkgs)
-          streamlit
-        ];
-        text = "${pkgs.streamlit}/bin/streamlit run app.py";
+        runtimeInputs = [ pythonEnv ];
+        text = "${pythonEnv}/bin/python3 -m streamlit run app.py";
       };
     in
     {
@@ -53,8 +53,7 @@
           buildInputs = with pkgs; [
             treefmtEval.config.build.wrapper
 
-            (python3.withPackages pyPkgs)
-            streamlit
+            pythonEnv
 
             # tools
             black
