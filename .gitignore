@@ -2,5 +2,7 @@
 .venv
 .vscode
 __pycache__
+result
+myapp.log
 data.json
 tokens.env
