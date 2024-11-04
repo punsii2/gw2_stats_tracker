@@ -237,9 +237,12 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         | (df["boonStrips"] >= 5)
         | (df["condiCleanse"] >= 10)
     ]
-    if df.size == 0 or "gorupBuffsActive" not in df:
+    if df.size == 0:
         # No players actually participated...
         raise FightInvalidException(f"Log {log_id} contains no active players!")
+    if "groupBuffsActive" not in df:
+        # too lazy to think about what to do here
+        raise FightInvalidException(f"Log {log_id} does not contain groupBuffs!")
 
     # Same idea for the boons, but we have a more complicated data structure to begin with:
     # "groupBuffsActive": [
