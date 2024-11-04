@@ -184,10 +184,23 @@ if __name__ == "__main__":
     #     log = requests.get(f"{BASE_URL}/getJson?id={log_id}").json()
     #     print(transform_log(filter_log_data(log), log_id))
 
-    log_id = _fetch_log_list(user_token)[0]
-    data_response = requests.get(f"{BASE_URL}/getJson?id={log_id}")
-    data_response.raise_for_status()
-    d = data_response.json()
+    log_ids = _fetch_log_list(user_token)
+    for log_id in log_ids[0:]:
+        data_response = requests.get(f"{BASE_URL}/getJson?id={log_id}")
+        data_response.raise_for_status()
+        d = data_response.json()
+        try:
+            transform_log(filter_log_data(d), log_id)
 
-    with open("data.json", "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=4)
+        except FightInvalidException as e:
+            print(f"{e=} - {type(e)=}")
+            with open("data.json", "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=4)
+            sys.exit()
+            continue
+        except Exception as e:
+            print(e)
+            print(type(e))
+            with open("data.json", "w", encoding="utf-8") as f:
+                json.dump(d, f, ensure_ascii=False, indent=4)
+            sys.exit()
