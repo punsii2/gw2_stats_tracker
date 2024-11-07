@@ -48,8 +48,9 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     "hasCommanderTag",
     "profession",
     "support",
-    "buffUptimesActive",
     "groupBuffsActive",
+    "squadBuffsActive",
+    "buffUptimesActive",
     "consumables",
     "activeTimes",
     "extHealingStats",
@@ -61,43 +62,28 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
-_BOON_GENERATION_GROUP_KEY_TABLE = {
-    717: "Protection(groupGeneration/s)",
-    718: "Regeneration(groupGeneration/s)",
-    719: "Switftness(groupGeneration/s)",
-    725: "Fury(groupGeneration/s)",
-    726: "Vigor(groupGeneration/s)",
-    740: "Might(groupGeneration/s)",
-    743: "Aegis(groupGeneration/s)",
-    873: "Resolution(groupGeneration/s)",
-    1122: "Stability(groupGeneration/s)",
-    1187: "Quickness(groupGeneration/s)",
-    5974: "Superspeed(groupGeneration/s)",
-    10332: "ChaosAura(groupGeneration/s)",
-    26980: "Resistance(groupGeneration/s)",
-    30328: "Alacrity(groupGeneration/s)",
-    # 10269 / 13017 -> Stealth
+_BOON_IDS = {
+    717: "Protection",
+    718: "Regeneration",
+    719: "Switftness",
+    725: "Fury",
+    726: "Vigor",
+    740: "Might",
+    743: "Aegis",
+    873: "Resolution",
+    1122: "Stability",
+    1187: "Quickness",
+    5974: "Superspeed",
+    10332: "ChaosAura",
+    26980: "Resistance",
+    30328: "Alacrity",
 }
+_BOON_CATEGORIES_IN = ["groupBuffsActive", "squadBuffsActive", "buffUptimesActive"]
+_BOON_CATEGORIES_OUT = ["(groupGeneration/s)", "(squadGeneration/s)", "(uptime%)"]
+_BOON_SELECTORS = ["generation", "generation", "uptime"]
 
-_BOON_UPTIME_KEY_TABLE = {
-    717: "Protection(uptime%)",
-    718: "Regeneration(uptime%)",
-    719: "Switftness(uptime%)",
-    725: "Fury(uptime%)",
-    726: "Vigor(uptime%)",
-    740: "Might(uptime%)",
-    743: "Aegis(uptime%)",
-    873: "Resolution(uptime%)",
-    1122: "Stability(uptime%)",
-    1187: "Quickness(uptime%)",
-    5974: "Superspeed(uptime%)",
-    10332: "ChaosAura(uptime%)",
-    26980: "Resistance(uptime%)",
-    30328: "Alacrity(uptime%)",
-}
 BOON_KEYS = sorted(
-    list(_BOON_GENERATION_GROUP_KEY_TABLE.values())
-    + list(_BOON_UPTIME_KEY_TABLE.values())
+    [id + postfix for postfix in _BOON_CATEGORIES_OUT for id in _BOON_IDS.values()]
 ) + ["Bufffood(uptime%)"]
 
 # These are keys where i dont see a scenario in which they would
@@ -240,9 +226,10 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     if df.size == 0:
         # No players actually participated...
         raise FightInvalidException(f"Log {log_id} contains no active players!")
-    if "groupBuffsActive" not in df:
-        # too lazy to think about what to do here
-        raise FightInvalidException(f"Log {log_id} does not contain groupBuffs!")
+    for column in _BOON_CATEGORIES_IN:
+        if column not in df:
+            # too lazy to think about what to do here
+            raise FightInvalidException(f"Log {log_id} does not contain {column}!")
 
     # Same idea for the boons, but we have a more complicated data structure to begin with:
     # "groupBuffsActive": [
@@ -257,51 +244,34 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     #   },
     #   {....}
     # ]
-    EMPTY_BOON_MAP = {k: 0 for k in _BOON_GENERATION_GROUP_KEY_TABLE.keys()}
-    df = pd.concat(
-        [
-            df.drop(columns=["groupBuffsActive"]),
-            df["groupBuffsActive"]
-            .map(
-                lambda cell_value: (
-                    EMPTY_BOON_MAP
-                    if not isinstance(cell_value, List)
-                    else EMPTY_BOON_MAP
-                    | {
-                        e["id"]: e["buffData"][0]["generation"]
-                        for e in cell_value
-                        if e["id"] in _BOON_GENERATION_GROUP_KEY_TABLE.keys()
-                    }
-                )
-            )
-            .apply(pd.Series),
-        ],
-        axis=1,
-    )
-    df.rename(columns=_BOON_GENERATION_GROUP_KEY_TABLE, inplace=True)
 
-    EMPTY_BOON_MAP = {k: 0 for k in _BOON_UPTIME_KEY_TABLE.keys()}
+    EMPTY_BOON_MAP = {k: 0 for k in _BOON_IDS.keys()}
     df = pd.concat(
         [
-            df.drop(columns=["buffUptimesActive"]),
-            df["buffUptimesActive"]
-            .map(
+            df[column_name_in]  # type: ignore
+            .map(  # type: ignore
                 lambda cell_value: (
                     EMPTY_BOON_MAP
                     if not isinstance(cell_value, List)
                     else EMPTY_BOON_MAP
                     | {
-                        e["id"]: e["buffData"][0]["uptime"]
+                        e["id"]: e["buffData"][0][selector]
                         for e in cell_value
-                        if e["id"] in _BOON_UPTIME_KEY_TABLE.keys()
+                        if e["id"] in _BOON_IDS.keys()
                     }
                 )
             )
-            .apply(pd.Series),
-        ],
+            .apply(pd.Series)
+            .rename(columns={k: v + column_name_out for k, v in _BOON_IDS.items()})
+            for column_name_in, column_name_out, selector in zip(
+                _BOON_CATEGORIES_IN,
+                _BOON_CATEGORIES_OUT,
+                _BOON_SELECTORS,
+            )
+        ]
+        + [df.drop(columns=_BOON_CATEGORIES_IN)],
         axis=1,
     )
-    df.rename(columns=_BOON_UPTIME_KEY_TABLE, inplace=True)
 
     # Reinforced armor: 9283
     # Malnourished: 46587
@@ -367,15 +337,13 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
         if key not in df:
             continue
         df[key] = df[key] / df["activeTimes"]
-    for key in list(_BOON_UPTIME_KEY_TABLE.values()) + list(
-        _BOON_GENERATION_GROUP_KEY_TABLE.values()
-    ):
+    for key in BOON_KEYS:
         df[key] = df[key] / df["activeTimes"]
-    for key in list(_BOON_UPTIME_KEY_TABLE.values()):
-        df[key] = df[key].clip(0, 1)
+        if "uptime" in key:
+            df[key] = df[key].clip(0, 1)
 
     # add "percentage alive" as it is more understandable than "activeTimes" and fix the "duration" for that
-    df["duration"] = pd.to_timedelta(df["duration"]).dt.total_seconds()
+    df["duration"] = pd.to_timedelta(df["duration"]).dt.total_seconds()  # type: ignore
     df["percentageAlive"] = df["activeTimes"] / df["duration"]
 
     # fix datetime columns
