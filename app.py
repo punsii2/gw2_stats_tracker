@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from fetch_logs import _HIDDEN_KEYS, fetch_data
+from process_logs import BOON_CATEGORIES_OUT, BOON_IDS
 
 logging.basicConfig(filename="myapp.log", level=logging.INFO)
 
@@ -60,15 +61,27 @@ stat_category = st.sidebar.selectbox(
     "Stat selection:", options=STAT_CATEGORIES, help=stat_category_help
 )
 
+
 if not userToken:
     st.stop()
-df = fetch_data(userToken, stat_category)
-key_selection = [key for key in list(df) if key not in _HIDDEN_KEYS]
-stat_selector = st.sidebar.selectbox(
-    "Select Stats",
-    key_selection,
-    help="Choose the data that you are interested in.",
-)
+
+df = fetch_data(userToken, stat_category)  # type: ignore
+stat_selector = ""
+if stat_category == "Boons":
+    boon = st.sidebar.selectbox(
+        "Boon:", options=sorted(BOON_IDS.values()), help=stat_category_help
+    )
+    boon_type = st.sidebar.selectbox(
+        "Boon Type:", options=BOON_CATEGORIES_OUT, help=stat_category_help
+    )
+    stat_selector = boon + boon_type  # type: ignore
+else:
+    key_selection = [key for key in list(df) if key not in _HIDDEN_KEYS]
+    stat_selector = st.sidebar.selectbox(
+        "Select Stats",
+        key_selection,
+        help="Choose the data that you are interested in.",
+    )
 
 group_by_selection = st.sidebar.selectbox(
     "Group by:",

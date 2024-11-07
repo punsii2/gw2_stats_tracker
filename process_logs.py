@@ -62,7 +62,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
     # "outgoingHealing" XXX does not show up anymore?
 ]
 
-_BOON_IDS = {
+BOON_IDS = {
     717: "Protection",
     718: "Regeneration",
     719: "Switftness",
@@ -79,11 +79,11 @@ _BOON_IDS = {
     30328: "Alacrity",
 }
 _BOON_CATEGORIES_IN = ["groupBuffsActive", "squadBuffsActive", "buffUptimesActive"]
-_BOON_CATEGORIES_OUT = ["(groupGeneration/s)", "(squadGeneration/s)", "(uptime%)"]
+BOON_CATEGORIES_OUT = ["(groupGeneration/s)", "(squadGeneration/s)", "(uptime%)"]
 _BOON_SELECTORS = ["generation", "generation", "uptime"]
 
 BOON_KEYS = sorted(
-    [id + postfix for postfix in _BOON_CATEGORIES_OUT for id in _BOON_IDS.values()]
+    [id + postfix for postfix in BOON_CATEGORIES_OUT for id in BOON_IDS.values()]
 ) + ["Bufffood(uptime%)"]
 
 # These are keys where i dont see a scenario in which they would
@@ -245,7 +245,7 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
     #   {....}
     # ]
 
-    EMPTY_BOON_MAP = {k: 0 for k in _BOON_IDS.keys()}
+    EMPTY_BOON_MAP = {k: 0 for k in BOON_IDS.keys()}
     df = pd.concat(
         [
             df[column_name_in]  # type: ignore
@@ -257,15 +257,15 @@ def transform_log(log: dict, log_id: str) -> pd.DataFrame:
                     | {
                         e["id"]: e["buffData"][0][selector]
                         for e in cell_value
-                        if e["id"] in _BOON_IDS.keys()
+                        if e["id"] in BOON_IDS.keys()
                     }
                 )
             )
             .apply(pd.Series)
-            .rename(columns={k: v + column_name_out for k, v in _BOON_IDS.items()})
+            .rename(columns={k: v + column_name_out for k, v in BOON_IDS.items()})
             for column_name_in, column_name_out, selector in zip(
                 _BOON_CATEGORIES_IN,
-                _BOON_CATEGORIES_OUT,
+                BOON_CATEGORIES_OUT,
                 _BOON_SELECTORS,
             )
         ]

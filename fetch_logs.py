@@ -28,7 +28,7 @@ WORKER_COUNT = 4
 
 BASE_URL = "https://dps.report"
 
-# These keys are needed but can not be selected
+# These keys are needed but should not be selectable
 _HIDDEN_KEYS = [
     "id",
     "timeStart",
@@ -189,6 +189,7 @@ if __name__ == "__main__":
         data_response = requests.get(f"{BASE_URL}/getJson?id={log_id}")
         data_response.raise_for_status()
         d = data_response.json()
+
         try:
             transform_log(filter_log_data(d), log_id)
 
@@ -197,7 +198,6 @@ if __name__ == "__main__":
             with open("data.json", "w", encoding="utf-8") as f:
                 json.dump(d, f, ensure_ascii=False, indent=4)
             sys.exit()
-            continue
         except Exception as e:
             print(e)
             print(type(e))
