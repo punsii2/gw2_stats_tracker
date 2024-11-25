@@ -65,7 +65,7 @@ _RELEVANT_KEYS_DATA_PLAYERS = [
 BOON_IDS = {
     717: "Protection",
     718: "Regeneration",
-    719: "Switftness",
+    719: "Swiftness",
     725: "Fury",
     726: "Vigor",
     740: "Might",
