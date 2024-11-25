@@ -73,10 +73,14 @@ BOON_IDS = {
     873: "Resolution",
     1122: "Stability",
     1187: "Quickness",
-    5974: "Superspeed",
-    10332: "ChaosAura",
     26980: "Resistance",
     30328: "Alacrity",
+    5974: "Superspeed",
+    10332: "ChaosAura",
+    5577: "ShockAura",
+    5579: "FrostAura",
+    5677: "FireAura",
+    5684: "MagnetAura",
 }
 _BOON_CATEGORIES_IN = ["groupBuffsActive", "squadBuffsActive", "buffUptimesActive"]
 BOON_CATEGORIES_OUT = ["(groupGeneration/s)", "(squadGeneration/s)", "(uptime%)"]
